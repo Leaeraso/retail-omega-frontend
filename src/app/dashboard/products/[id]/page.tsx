@@ -1,6 +1,7 @@
 'use client'
 
 import { ProductState } from '@/components/product-state'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -9,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useParams } from 'next/navigation'
+import { ArrowLeft, Pen, Trash } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
 
 const product = {
   id: 1,
@@ -68,14 +70,34 @@ const product = {
 }
 
 export default function ProductDetailPage() {
+  const router = useRouter()
   //   const params = useParams()
   //   const id = Number(params.id)
 
   return (
     <div className="w-full h-auto overflow-hidden">
-      <h1 className="text-3xl font-bold w-full flex justify-center items-center mt-7">
-        Producto: {product.description}
-      </h1>
+      <div className="flex flex-row items-center">
+        <div className="flex flex-row justify-end items-center gap-x-2 mx-2 my-4">
+          <Button
+            className="hover:cursor-pointer"
+            onClick={() => router.push('/dashboard/products')}
+          >
+            <ArrowLeft className="h-4 w-4 text-white" />
+          </Button>
+        </div>
+        <h1 className="text-3xl font-bold w-full flex justify-center items-center mt-7">
+          Producto: {product.description}
+        </h1>
+        <div className="flex flex-row justify-end items-center gap-x-2 mx-2 my-4">
+          <Button className="hover:cursor-pointer">
+            <Pen className="h-4 w-4 text-white" />
+          </Button>
+          <Button className="hover:cursor-pointer">
+            <Trash className="h-3 w-3 text-white" />
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-4 grid-rows-5 gap-4 w-full h-auto p-4">
         <div className="col-span-4 w-full">
           <Table>

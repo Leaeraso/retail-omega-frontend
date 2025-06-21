@@ -1,0 +1,287 @@
+'use client'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
+import { createProductSchema, ProductFormData } from '@/schemas/product.schema'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Button } from './ui/button'
+import { InventoryPolicy, Product } from '@/types/product.types'
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
+import { DialogTitle } from '@radix-ui/react-dialog'
+import {
+  Select,
+  SelectTrigger,
+  SelectItem,
+  SelectValue,
+  SelectContent,
+} from './ui/select'
+import { useProductProviderStore } from '@/stores/product-provider.store'
+import { useState } from 'react'
+
+interface Props {
+  isOpen: boolean
+  onClose: () => void
+  onCreate: (data: ProductFormData & { providerId: number }) => Product | null
+}
+
+const providers = [
+  {
+    id: 1,
+    name: 'Juan Perez',
+    email: 'string',
+    phone: 'string',
+    providerState: 'ALTA',
+    deactivateDate: '2025-06-21',
+  },
+  {
+    id: 2,
+    name: 'Martin Cesare',
+    email: 'string',
+    phone: 'string',
+    providerState: 'BAJA',
+    deactivateDate: '2025-06-21',
+  },
+  {
+    id: 3,
+    name: 'Manuel Rodriguez',
+    email: 'string',
+    phone: 'string',
+    providerState: 'ALTA',
+    deactivateDate: '2025-06-21',
+  },
+]
+
+export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(createProductSchema),
+    defaultValues: {
+      code: '',
+      description: '',
+      currentStock: 0,
+      annualDemand: 0,
+      storageCost: 0,
+      inventoryPolicy: InventoryPolicy.LOTE_FIJO,
+      safetyStock: 0,
+      reviewIntervalDays: 0,
+    },
+  })
+  const addProductProvider = useProductProviderStore(
+    (state) => state.addProductProvider
+  )
+  const [isLoteFijo, setIsLoteFijo] = useState<boolean>(true)
+
+  const onSubmit = (data: ProductFormData & { providerId: number }) => {
+    const createdProduct = onCreate(data)
+
+    if (createdProduct != null) {
+      addProductProvider({
+        productId: createdProduct.id,
+        providerId: data.providerId,
+      })
+    }
+
+    reset()
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <DialogHeader className="w-full flex justify-center items-center">
+            <DialogTitle className="text-2xl font-bold">
+              Crear nuevo producto
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 grid-rows-2 gap-4">
+            <div className="row-span-2">
+              <div>
+                <Label htmlFor="code" className="py-2">
+                  Código
+                </Label>
+                <Input
+                  id="code"
+                  type="text"
+                  placeholder="123456"
+                  {...register('code')}
+                />
+                {errors.code && (
+                  <p className="text-red-500">{errors.code.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="description" className="py-2">
+                  Descripción
+                </Label>
+                <Input
+                  id="description"
+                  type="text"
+                  placeholder="Producto 1"
+                  {...register('description')}
+                />
+                {errors.description && (
+                  <p className="text-red-500">{errors.description.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="currentStock" className="py-2">
+                  Stock Actual
+                </Label>
+                <Input
+                  id="currentStock"
+                  type="number"
+                  {...register('currentStock', { valueAsNumber: true })}
+                />
+                {errors.currentStock && (
+                  <p className="text-red-500">{errors.currentStock.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="annualDemand" className="py-2">
+                  Demanda Anual
+                </Label>
+                <Input
+                  id="annualDemand"
+                  type="number"
+                  {...register('annualDemand', { valueAsNumber: true })}
+                />
+                {errors.annualDemand && (
+                  <p className="text-red-500">{errors.annualDemand.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="storageCost" className="py-2">
+                  Costo de almacenamiento
+                </Label>
+                <Input
+                  id="storageCost"
+                  type="number"
+                  {...register('storageCost', { valueAsNumber: true })}
+                />
+                {errors.storageCost && (
+                  <p className="text-red-500">{errors.storageCost.message}</p>
+                )}
+              </div>
+            </div>
+            <div className="row-span-2">
+              <div>
+                <Label htmlFor="inventoryPolicy" className="py-2">
+                  Política de inventario
+                </Label>
+                <Controller
+                  name="inventoryPolicy"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ? field.value.toString() : ''}
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        setIsLoteFijo(value === 'LOTE_FIJO')
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona una política" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LOTE_FIJO">Lote Fijo</SelectItem>
+                        <SelectItem value="INTERVALO_FIJO">
+                          Intervalo Fijo
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.inventoryPolicy && (
+                  <p className="text-red-500">
+                    {errors.inventoryPolicy.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="safetyStock" className="py-2">
+                  Stock de Seguridad
+                </Label>
+                <Input
+                  id="safetyStock"
+                  type="number"
+                  {...register('safetyStock', { valueAsNumber: true })}
+                />
+                {errors.safetyStock && (
+                  <p className="text-red-500">{errors.safetyStock.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="reviewIntervalDays" className="py-2">
+                  Intervalo de revisión
+                </Label>
+                <Input
+                  id="reviewIntervalDays"
+                  type="number"
+                  {...register('reviewIntervalDays', { valueAsNumber: true })}
+                  disabled={!isLoteFijo}
+                />
+                {errors.reviewIntervalDays && (
+                  <p className="text-red-500">
+                    {errors.reviewIntervalDays.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="providerId" className="py-2">
+                  Proovedor
+                </Label>
+                <Controller
+                  name="providerId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ? field.value.toString() : ''}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona un proveedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {providers.map((provider) => (
+                          <SelectItem
+                            key={provider.id}
+                            value={provider.id.toString()}
+                          >
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-row justify-center items-center gap-x-4">
+            <Button type="submit" className=" text-white px-4 py-2 rounded">
+              Crear Producto
+            </Button>
+            <Button className="text-white px-4 py-2 rounded" onClick={onClose}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

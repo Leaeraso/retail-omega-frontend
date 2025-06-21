@@ -38,7 +38,7 @@ export interface Product {
   providers: Provider[]
 }
 
-enum InventoryPolicy {
-  LOTE_FIJO = "Lote Fijo",
-  INTERVALO_FIJO = "Inventario Fijo",
+export enum InventoryPolicy {
+  LOTE_FIJO = "LOTE_FIJO",
+  INTERVALO_FIJO = "INTERVALO_FIJO",
 }
