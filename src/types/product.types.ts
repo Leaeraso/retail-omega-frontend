@@ -42,3 +42,8 @@ export enum InventoryPolicy {
   LOTE_FIJO = "LOTE_FIJO",
   INTERVALO_FIJO = "INTERVALO_FIJO",
 }
+
+export interface ProductFormInput extends Partial<Product> {
+  safetyStock: number
+  reviewIntervalDays: number
+}

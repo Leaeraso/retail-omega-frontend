@@ -18,11 +18,12 @@ import {
 } from './ui/select'
 import { useProductProviderStore } from '@/stores/product-provider.store'
 import { useState } from 'react'
+import { createProduct } from '@/services/product.service'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-  onCreate: (data: ProductFormData & { providerId: number }) => Product | null
+  onCreate: (p: Product) => void
 }
 
 const providers = [
@@ -77,10 +78,11 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   )
   const [isLoteFijo, setIsLoteFijo] = useState<boolean>(true)
 
-  const onSubmit = (data: ProductFormData & { providerId: number }) => {
-    const createdProduct = onCreate(data)
+  const onSubmit = async (data: ProductFormData & { providerId: number }) => {
+    const createdProduct = await createProduct(data)
 
     if (createdProduct != null) {
+      onCreate(createdProduct)
       addProductProvider({
         productId: createdProduct.id,
         providerId: data.providerId,
