@@ -1,3 +1,5 @@
+'use client'
+
 import { Product } from '@/app/types/product.types'
 import { Button } from './ui/button'
 import {
@@ -8,8 +10,8 @@ import {
   TableBody,
   TableCell,
 } from './ui/table'
-import { Badge } from './ui/badge'
 import { ProductState } from './product-state'
+import { useRouter } from 'next/navigation'
 
 const products = [
   {
@@ -120,6 +122,7 @@ const products = [
 ]
 
 export function ProductTable() {
+  const router = useRouter()
   // const products: Product[] = []
 
   return (
@@ -163,7 +166,14 @@ export function ProductTable() {
                 <TableCell>{product.fixedIntervalPolicy.safetyStock}</TableCell>
                 <TableCell>{product.providers[0].providerName}</TableCell>
                 <TableCell>
-                  <Button className="hover:cursor-pointer">Ver más</Button>
+                  <Button
+                    className="hover:cursor-pointer"
+                    onClick={() =>
+                      router.push(`/dashboard/products/${product.id}`)
+                    }
+                  >
+                    Ver más
+                  </Button>
                 </TableCell>
               </TableRow>
             )
