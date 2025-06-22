@@ -3,23 +3,13 @@ import { create } from "zustand"
 
 interface ProductProviderStore {
   pps: ProductProvider[]
-  addProductProvider: (
-    p: Pick<ProductProvider, "productId" | "providerId">
-  ) => void
+  addProductProvider: (p: ProductProvider) => void
 }
 
 export const useProductProviderStore = create<ProductProviderStore>((set) => ({
   pps: [],
   addProductProvider: (pp) =>
     set((state) => ({
-      pps: [
-        ...state.pps,
-        {
-          ...pp,
-          unitCost: 0,
-          leadTime: 0,
-          shippingCost: 0,
-        },
-      ],
+      pps: [...state.pps, pp],
     })),
 }))

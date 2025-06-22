@@ -10,69 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useProductStore } from '@/stores/product.store'
 import { ArrowLeft, Pen, Trash } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
-const product = {
-  id: 1,
-  code: '1001',
-  description: 'Producto 1',
-  currentStock: 120,
-  annualDemand: 1342,
-  storageCost: 4,
-  totalCost: 360,
-  deactivationDate: '2025-06-21',
-  productState: 'ALTA',
-  inventoryPolicy: 'LOTE_FIJO',
-  fixedLotPolicy: {
-    optimalLotSize: 0,
-    reorderPoint: 0,
-    safetyStock: 0,
-  },
-  fixedIntervalPolicy: {
-    safetyStock: 0,
-    reviewIntervalDays: 0,
-    maxInventoryLevel: 0,
-    lastReviewDate: '2025-06-21',
-  },
-  providers: [
-    {
-      id: 1,
-      providerId: 0,
-      productId: 0,
-      providerName: 'Juan Ignacio Fernandez',
-      unitCost: 0,
-      leadTime: 0,
-      shippingCost: 0,
-      isDefault: true,
-    },
-    {
-      id: 2,
-      providerId: 0,
-      productId: 0,
-      providerName: 'Juan Ignacio Fernandez',
-      unitCost: 0,
-      leadTime: 0,
-      shippingCost: 0,
-      isDefault: true,
-    },
-    {
-      id: 3,
-      providerId: 0,
-      productId: 0,
-      providerName: 'Juan Ignacio Fernandez',
-      unitCost: 0,
-      leadTime: 0,
-      shippingCost: 0,
-      isDefault: true,
-    },
-  ],
-}
-
 export default function ProductDetailPage() {
   const router = useRouter()
-  //   const params = useParams()
-  //   const id = Number(params.id)
+  const params = useParams()
+  const id = Number(params.id)
+  const product = useProductStore((state) =>
+    state.products.find((p) => p.id === id)
+  )
+
+  if (!product) {
+    return <div>Producto no encontrado</div>
+  }
 
   return (
     <div className="w-full h-auto overflow-hidden">

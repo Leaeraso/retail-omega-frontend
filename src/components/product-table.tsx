@@ -12,15 +12,18 @@ import {
 import { ProductState } from './product-state'
 import { useRouter } from 'next/navigation'
 import { ClipboardPlus, Eye, Pen, Trash } from 'lucide-react'
-import { useState } from 'react'
-import { useProductStore } from '@/stores/product.store'
+import { useEffect, useState } from 'react'
 import AddProductModal from './add-product-modal'
+import { useProducts } from '@/hooks/use-product'
 
 export function ProductTable() {
   const router = useRouter()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const products = useProductStore((state) => state.products)
-  const addProduct = useProductStore((state) => state.addProduct)
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+  const { products, fetchProducts, addProduct } = useProducts()
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
 
   const openModal = () => {
     setIsModalOpen(true)

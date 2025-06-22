@@ -17,41 +17,16 @@ import {
   SelectContent,
 } from './ui/select'
 import { useProductProviderStore } from '@/stores/product-provider.store'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createProduct } from '@/services/product.service'
+import { useProviders } from '@/hooks/use-providers'
+import { boundProductProvider } from '@/services/product-provider.service'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   onCreate: (p: Product) => void
 }
-
-const providers = [
-  {
-    id: 1,
-    name: 'Juan Perez',
-    email: 'string',
-    phone: 'string',
-    providerState: 'ALTA',
-    deactivateDate: '2025-06-21',
-  },
-  {
-    id: 2,
-    name: 'Martin Cesare',
-    email: 'string',
-    phone: 'string',
-    providerState: 'BAJA',
-    deactivateDate: '2025-06-21',
-  },
-  {
-    id: 3,
-    name: 'Manuel Rodriguez',
-    email: 'string',
-    phone: 'string',
-    providerState: 'ALTA',
-    deactivateDate: '2025-06-21',
-  },
-]
 
 export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   const {
@@ -77,16 +52,24 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
     (state) => state.addProductProvider
   )
   const [isLoteFijo, setIsLoteFijo] = useState<boolean>(true)
+  const { providers, fetchProviders } = useProviders()
+
+  useEffect(() => {
+    if (isOpen && providers.length === 0) {
+      fetchProviders()
+    }
+  }, [isOpen])
 
   const onSubmit = async (data: ProductFormData & { providerId: number }) => {
     const createdProduct = await createProduct(data)
 
     if (createdProduct != null) {
       onCreate(createdProduct)
-      addProductProvider({
+      const pp = await boundProductProvider({
         productId: createdProduct.id,
         providerId: data.providerId,
       })
+      addProductProvider(pp)
     }
 
     reset()
@@ -94,7 +77,12 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DialogHeader className="w-full flex justify-center items-center">
@@ -258,14 +246,20 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                         <SelectValue placeholder="Selecciona un proveedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {providers.map((provider) => (
-                          <SelectItem
-                            key={provider.id}
-                            value={provider.id.toString()}
-                          >
-                            {provider.name}
+                        {providers.length === 0 ? (
+                          <SelectItem value="pene" disabled>
+                            Cargando proveedores...
                           </SelectItem>
-                        ))}
+                        ) : (
+                          providers.map((provider) => (
+                            <SelectItem
+                              key={provider.id}
+                              value={provider.id.toString()}
+                            >
+                              {provider.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   )}
