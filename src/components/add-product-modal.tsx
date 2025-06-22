@@ -2,7 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { createProductSchema, ProductFormData } from '@/schemas/product.schema'
+import {
+  createProductProviderSchema,
+  createProductSchema,
+  ProductFormData,
+  ProductProviderFormData,
+} from '@/schemas/product.schema'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
@@ -20,7 +25,10 @@ import { useProductProviderStore } from '@/stores/product-provider.store'
 import { useEffect, useState } from 'react'
 import { createProduct } from '@/services/product.service'
 import { useProviders } from '@/hooks/use-providers'
-import { boundProductProvider } from '@/services/product-provider.service'
+import {
+  boundProductProvider,
+  setDefaultProductProvider,
+} from '@/services/product-provider.service'
 
 interface Props {
   isOpen: boolean
@@ -30,11 +38,11 @@ interface Props {
 
 export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
+    register: registerProduct,
+    handleSubmit: handleSubmitProduct,
+    reset: resetProduct,
+    control: controlProduct,
+    formState: { errors: errorsProduct },
   } = useForm<ProductFormData>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
@@ -48,6 +56,25 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
       reviewIntervalDays: 0,
     },
   })
+  const {
+    register: registerProductProvider,
+    getValues: getValuesProvider,
+    reset: resetProductProvider,
+    control: controlProductProvider,
+    formState: { errors: errorsProductProvider },
+    watch: watchProvider,
+  } = useForm<ProductProviderFormData>({
+    resolver: zodResolver(createProductProviderSchema),
+    defaultValues: {
+      providerId: 0,
+      unitCost: 0,
+      leadTime: 0,
+      shippingCost: 0,
+    },
+  })
+  const providerId = watchProvider('providerId')
+  const isProviderSelected = providerId !== 0
+
   const addProductProvider = useProductProviderStore(
     (state) => state.addProductProvider
   )
@@ -60,19 +87,26 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
     }
   }, [isOpen])
 
-  const onSubmit = async (data: ProductFormData & { providerId: number }) => {
-    const createdProduct = await createProduct(data)
+  const onSubmit = async (productData: ProductFormData) => {
+    console.log('productData', productData)
+    const productCreated = await createProduct(productData)
+    if (!productCreated) return
 
-    if (createdProduct != null) {
-      onCreate(createdProduct)
-      const pp = await boundProductProvider({
-        productId: createdProduct.id,
-        providerId: data.providerId,
-      })
-      addProductProvider(pp)
-    }
+    const providerData: ProductProviderFormData = getValuesProvider()
+    console.log('productProviderData', providerData)
+    console.log('productCreated', productCreated)
+    const bound = await boundProductProvider({
+      productId: productCreated.id,
+      ...providerData,
+    })
+    await setDefaultProductProvider(providerData.providerId)
 
-    reset()
+    console.log('productProviderCreated', bound)
+
+    addProductProvider(bound)
+    onCreate(productCreated)
+    resetProduct()
+    resetProductProvider()
     onClose()
   }
 
@@ -84,7 +118,7 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
       }}
     >
       <DialogContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmitProduct(onSubmit)} className="space-y-4">
           <DialogHeader className="w-full flex justify-center items-center">
             <DialogTitle className="text-2xl font-bold">
               Crear nuevo producto
@@ -101,10 +135,10 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   id="code"
                   type="text"
                   placeholder="123456"
-                  {...register('code')}
+                  {...registerProduct('code')}
                 />
-                {errors.code && (
-                  <p className="text-red-500">{errors.code.message}</p>
+                {errorsProduct.code && (
+                  <p className="text-red-500">{errorsProduct.code.message}</p>
                 )}
               </div>
               <div>
@@ -115,10 +149,12 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   id="description"
                   type="text"
                   placeholder="Producto 1"
-                  {...register('description')}
+                  {...registerProduct('description')}
                 />
-                {errors.description && (
-                  <p className="text-red-500">{errors.description.message}</p>
+                {errorsProduct.description && (
+                  <p className="text-red-500">
+                    {errorsProduct.description.message}
+                  </p>
                 )}
               </div>
 
@@ -129,10 +165,12 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="currentStock"
                   type="number"
-                  {...register('currentStock', { valueAsNumber: true })}
+                  {...registerProduct('currentStock', { valueAsNumber: true })}
                 />
-                {errors.currentStock && (
-                  <p className="text-red-500">{errors.currentStock.message}</p>
+                {errorsProduct.currentStock && (
+                  <p className="text-red-500">
+                    {errorsProduct.currentStock.message}
+                  </p>
                 )}
               </div>
 
@@ -143,10 +181,12 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="annualDemand"
                   type="number"
-                  {...register('annualDemand', { valueAsNumber: true })}
+                  {...registerProduct('annualDemand', { valueAsNumber: true })}
                 />
-                {errors.annualDemand && (
-                  <p className="text-red-500">{errors.annualDemand.message}</p>
+                {errorsProduct.annualDemand && (
+                  <p className="text-red-500">
+                    {errorsProduct.annualDemand.message}
+                  </p>
                 )}
               </div>
 
@@ -157,21 +197,21 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="storageCost"
                   type="number"
-                  {...register('storageCost', { valueAsNumber: true })}
+                  {...registerProduct('storageCost', { valueAsNumber: true })}
                 />
-                {errors.storageCost && (
-                  <p className="text-red-500">{errors.storageCost.message}</p>
+                {errorsProduct.storageCost && (
+                  <p className="text-red-500">
+                    {errorsProduct.storageCost.message}
+                  </p>
                 )}
               </div>
-            </div>
-            <div className="row-span-2">
               <div>
                 <Label htmlFor="inventoryPolicy" className="py-2">
                   Política de inventario
                 </Label>
                 <Controller
                   name="inventoryPolicy"
-                  control={control}
+                  control={controlProduct}
                   render={({ field }) => (
                     <Select
                       value={field.value ? field.value.toString() : ''}
@@ -192,13 +232,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                     </Select>
                   )}
                 />
-                {errors.inventoryPolicy && (
+                {errorsProduct.inventoryPolicy && (
                   <p className="text-red-500">
-                    {errors.inventoryPolicy.message}
+                    {errorsProduct.inventoryPolicy.message}
                   </p>
                 )}
               </div>
-
+            </div>
+            <div className="row-span-2">
               <div>
                 <Label htmlFor="safetyStock" className="py-2">
                   Stock de Seguridad
@@ -206,13 +247,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="safetyStock"
                   type="number"
-                  {...register('safetyStock', { valueAsNumber: true })}
+                  {...registerProduct('safetyStock', { valueAsNumber: true })}
                 />
-                {errors.safetyStock && (
-                  <p className="text-red-500">{errors.safetyStock.message}</p>
+                {errorsProduct.safetyStock && (
+                  <p className="text-red-500">
+                    {errorsProduct.safetyStock.message}
+                  </p>
                 )}
               </div>
-
               <div>
                 <Label htmlFor="reviewIntervalDays" className="py-2">
                   Intervalo de revisión
@@ -220,12 +262,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="reviewIntervalDays"
                   type="number"
-                  {...register('reviewIntervalDays', { valueAsNumber: true })}
-                  disabled={!isLoteFijo}
+                  {...registerProduct('reviewIntervalDays', {
+                    valueAsNumber: true,
+                  })}
+                  disabled={isLoteFijo}
                 />
-                {errors.reviewIntervalDays && (
+                {errorsProduct.reviewIntervalDays && (
                   <p className="text-red-500">
-                    {errors.reviewIntervalDays.message}
+                    {errorsProduct.reviewIntervalDays.message}
                   </p>
                 )}
               </div>
@@ -236,11 +280,11 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 </Label>
                 <Controller
                   name="providerId"
-                  control={control}
+                  control={controlProductProvider}
                   render={({ field }) => (
                     <Select
                       value={field.value ? field.value.toString() : ''}
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => field.onChange(Number(value))}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecciona un proveedor" />
@@ -265,6 +309,62 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   )}
                 />
               </div>
+
+              {isProviderSelected && (
+                <div>
+                  <div>
+                    <Label htmlFor="unitCost" className="py-2">
+                      Costo unitario
+                    </Label>
+                    <Input
+                      id="unitCost"
+                      type="number"
+                      {...registerProductProvider('unitCost', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {errorsProductProvider.unitCost && (
+                      <p className="text-red-500">
+                        {errorsProductProvider.unitCost.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="leadTime" className="py-2">
+                      Lead Time
+                    </Label>
+                    <Input
+                      id="leadTime"
+                      type="number"
+                      {...registerProductProvider('leadTime', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {errorsProductProvider.leadTime && (
+                      <p className="text-red-500">
+                        {errorsProductProvider.leadTime.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="shippingCost" className="py-2">
+                      Costo de envío
+                    </Label>
+                    <Input
+                      id="shippingCost"
+                      type="number"
+                      {...registerProductProvider('shippingCost', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {errorsProductProvider.shippingCost && (
+                      <p className="text-red-500">
+                        {errorsProductProvider.shippingCost.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

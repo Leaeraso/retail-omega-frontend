@@ -51,8 +51,17 @@ export const createProductSchema = z.object({
   ]),
   safetyStock: z.coerce.number().nonnegative("Debe ser >= 0"),
   reviewIntervalDays: z.coerce.number().nonnegative("Debe ser >= 0"),
-  providerId: z.coerce.number().nonnegative("Debe ser >= 0"),
+})
+
+export const createProductProviderSchema = z.object({
+  providerId: z.number(),
+  unitCost: z.coerce.number().nonnegative("Debe ser >= 0"),
+  leadTime: z.coerce.number().nonnegative("Debe ser >= 0"),
+  shippingCost: z.coerce.number().nonnegative("Debe ser >= 0"),
 })
 
 export type ProductSchema = typeof productSchema
 export type ProductFormData = z.infer<typeof createProductSchema>
+export type ProductProviderFormData = z.infer<
+  typeof createProductProviderSchema
+>
