@@ -1,3 +1,5 @@
+import { SaleTable } from "@/components/sale-table";
+
 export default function Sales() {
   return (
     <div>
@@ -5,6 +7,9 @@ export default function Sales() {
         {' '}
         Ventas
       </h1>
+      <div>
+        <SaleTable />
+      </div>
     </div>
   )
 }
