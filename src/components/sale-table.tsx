@@ -14,10 +14,20 @@ import {
 import { ClipboardPlus, Eye, EyeClosed } from 'lucide-react'
 import SaleDetailModal from './sale-detail-modal'
 import { SaleDetailsTypes } from '@/types/sales.types'
+import AddSaleModal from './add-sale-modal'
 
 export function SaleTable() {
     const [modalOpen, setModalOpen] = useState(false)
     const [selectedDetail, setSelectedDetail] = useState<SaleDetailsTypes[]>([])
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+
+    const openModal = () => {
+        setIsModalOpen(true)
+    }
+
+    const closeModal = () => {
+        setIsModalOpen(false)
+    }
 
     const handleViewDetails = (details: SaleDetailsTypes[]) => {
         setSelectedDetail(details)
@@ -27,10 +37,19 @@ export function SaleTable() {
     return (
         <main>
             <div className="flex flex-row justify-end items-center gap-x-2 mx-2 my-4">
-                <Button className="hover:cursor-pointer">
+                <Button className="hover:cursor-pointer" onClick={openModal} >
                     <ClipboardPlus className="h-4 w-4 text-white" />
                 </Button>
             </div>
+
+
+            <AddSaleModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                onSave={(products) => {
+                    console.log('Productos de la venta:', products)
+                }}
+            />
 
             <div className="p-4">
                 <Table>
