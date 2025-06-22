@@ -1,3 +1,5 @@
+import { ProviderTable } from '@/components/provider-table'
+
 export default function Providers() {
   return (
     <div>
@@ -5,6 +7,7 @@ export default function Providers() {
         {' '}
         Proveedores
       </h1>
+      <ProviderTable />
     </div>
   )
 }

@@ -6,6 +6,10 @@ export function useProviders() {
   const providers = useProviderStore((state) => state.providers)
   const setProviders = useProviderStore((state) => state.setProviders)
 
+  const addProvider = useProviderStore((state) => state.addProvider)
+  const updateProvider = useProviderStore((state) => state.updateProvider)
+  const deleteProvider = useProviderStore((state) => state.deleteProvider)
+
   const fetchProviders = useCallback(async () => {
     const res = await getProviders()
     if (res) {
@@ -13,5 +17,11 @@ export function useProviders() {
     }
   }, [setProviders])
 
-  return { providers, fetchProviders }
+  return {
+    providers,
+    fetchProviders,
+    addProvider,
+    updateProvider,
+    deleteProvider,
+  }
 }
