@@ -26,13 +26,14 @@ export const boundProductProvider = async (payload: {
 
 export const setDefaultProductProvider = async (id: number) => {
   try {
+    console.log(`${BASE_URL}/product-providers/set-default/${id}`)
     const res = await fetch(`${BASE_URL}/product-providers/set-default/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
     })
-    const data = await res.json()
+    const data = await res.text()
     return data
   } catch (error) {
     console.error(error)

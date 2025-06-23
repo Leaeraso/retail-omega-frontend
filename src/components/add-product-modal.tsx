@@ -99,7 +99,7 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
       productId: productCreated.id,
       ...providerData,
     })
-    await setDefaultProductProvider(providerData.providerId)
+    await setDefaultProductProvider(bound.id)
 
     console.log('productProviderCreated', bound)
 
