@@ -25,6 +25,7 @@ export function ProductTable() {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL')
+  const [filterApplied, setFilterApplied] = useState(false)
 
   const {
     products,
@@ -66,18 +67,23 @@ export function ProductTable() {
     setSelectedFilter(value)
 
     if (value === 'ALL') {
+      setFilterApplied(false)
       await fetchProducts()
-    } else if (value === 'BELOW_STOCK') {
-      await fetchProductsBelowSecurityStock()
-    } else if (value === 'BELOW_REORDER') {
-      await fetchProductsBelowReorderPoint()
-    } else if (value.startsWith('PROVIDER_')) {
-      const id = parseInt(value.replace('PROVIDER_', ''))
-      await fetchProductsByProvider(id)
+    } else {
+      setFilterApplied(true)
+      if (value === 'BELOW_STOCK') {
+        await fetchProductsBelowSecurityStock()
+      } else if (value === 'BELOW_REORDER') {
+        await fetchProductsBelowReorderPoint()
+      } else if (value.startsWith('PROVIDER_')) {
+        const id = parseInt(value.replace('PROVIDER_', ''))
+        await fetchProductsByProvider(id)
+      }
     }
   }
 
-  const productsToRender = filteredProducts.length > 0 ? filteredProducts : products
+
+  const productsToRender = filterApplied ? filteredProducts : products
 
   return (
     <main>
