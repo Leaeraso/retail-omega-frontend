@@ -18,6 +18,26 @@ export const getProviders = async () => {
   }
 }
 
+export const getActiveProviders = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/providers/active`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+    if (!res.ok) {
+      console.error("Error fetching active providers:", res.status)
+      return []
+    }
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}
+
 export const createProvider = async (payload: ProviderFormInput) => {
   try {
     const res = await fetch(`${BASE_URL}/providers`, {

@@ -41,3 +41,18 @@ export const getProducts = async () => {
     return []
   }
 }
+export const getActiveProducts = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/products/active`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+    if (!res.ok) throw new Error("Error al obtener productos activos")
+    return await res.json()
+  } catch (error) {
+    console.error("Error en getActiveProducts:", error)
+    return []
+  }
+}

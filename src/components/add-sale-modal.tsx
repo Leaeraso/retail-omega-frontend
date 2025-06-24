@@ -31,7 +31,7 @@ interface Props {
 
 export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
     const [products, setProducts] = useState<SaleProduct[]>([])
-    const { products: allProducts, fetchProducts } = useProducts()
+    const { activeProducts, fetchActiveProducts } = useProducts()
 
     const {
         register,
@@ -49,8 +49,8 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
     })
 
     useEffect(() => {
-        if (isOpen) fetchProducts()
-    }, [isOpen, fetchProducts])
+        if (isOpen) fetchActiveProducts()
+    }, [isOpen, fetchActiveProducts])
 
     const onAddProduct = (data: SaleProduct) => {
         setProducts((prev) => [...prev, data])
@@ -87,7 +87,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
                                         <SelectValue placeholder="Selecciona un producto" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {allProducts.map((p) => (
+                                        {activeProducts.map((p) => (
                                             <SelectItem key={p.id} value={String(p.id)}>
                                                 {p.code} - {p.description}
                                             </SelectItem>

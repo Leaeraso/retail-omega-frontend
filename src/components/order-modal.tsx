@@ -49,7 +49,7 @@ export function OrderModal({
     reset,
     setValue,
     getValues,
-    watch: watchProvider,
+    watch,
     formState: { isSubmitting },
   } = useForm<OrderFormData>({
     resolver: zodResolver(createOrderSchema),
@@ -59,39 +59,52 @@ export function OrderModal({
     },
   })
 
-  const { providers, fetchProviders } = useProviders()
-  const { products, fetchProducts } = useProducts()
+  const { activeProviders, fetchActiveProviders } = useProviders()
+  const { activeProducts, fetchActiveProducts } = useProducts()
+
   const [selectedProductId, setSelectedProductId] = useState<number>(0)
   const [quantity, setQuantity] = useState<number>(1)
 
+  const addedProducts = watch('details')
+
+  useEffect(() => {
+    if (isOpen && activeProviders.length === 0) {
+      fetchActiveProviders()
+    }
+    if (isOpen && activeProducts.length === 0) {
+      fetchActiveProducts()
+    }
+  }, [isOpen, activeProviders.length, activeProducts.length, fetchActiveProviders, fetchActiveProducts])
+
+  useEffect(() => {
+    if (order) {
+      // Al abrir con orden para editar, seteo valores del formulario
+      reset({
+        providerId: order.providerId,
+        details: order.details,
+      })
+    } else {
+      reset({
+        providerId: 0,
+        details: [],
+      })
+    }
+  }, [order, reset])
+
   const addProduct = () => {
     if (selectedProductId && quantity > 0) {
-      const current = getValues('details')
-      const alreadtExists = current.some(
-        (p) => p.productId === selectedProductId
-      )
+      const current = getValues('details') || []
+      const alreadyExists = current.some((p) => p.productId === selectedProductId)
 
-      if (!alreadtExists) {
-        setValue('details', [
-          ...current,
-          { productId: selectedProductId, quantity },
-        ])
+      if (!alreadyExists) {
+        setValue('details', [...current, { productId: selectedProductId, quantity }])
         setSelectedProductId(0)
         setQuantity(1)
+      } else {
+        toast.error('El producto ya fue agregado')
       }
     }
   }
-
-  useEffect(() => {
-    if (isOpen && providers.length === 0) {
-      fetchProviders()
-    }
-    if (isOpen && products.length === 0) {
-      fetchProducts()
-    }
-  }, [isOpen])
-
-  const addedProducts = watchProvider('details')
 
   const handleDelete = async () => {
     if (!order) return
@@ -136,14 +149,13 @@ export function OrderModal({
       toast.success('Pedido actualizado correctamente')
     } else {
       const createdOrder = await createOrder(orderData)
-      if (!createOrder) {
+      if (!createdOrder) {
         toast.error('Error al crear el pedido')
         return
       }
       onCreate(createdOrder)
       toast.success('Pedido creado correctamente')
     }
-
     reset()
     onClose()
   }
@@ -157,9 +169,10 @@ export function OrderModal({
               {order ? 'Editar Pedido' : 'Crear Pedido'}
             </DialogTitle>
           </DialogHeader>
+
           <div>
             <Label htmlFor="providerId" className="py-2">
-              Proovedor
+              Proveedor
             </Label>
             <Controller
               name="providerId"
@@ -173,16 +186,13 @@ export function OrderModal({
                     <SelectValue placeholder="Selecciona un proveedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {providers.length === 0 ? (
-                      <SelectItem value="hola" disabled>
+                    {activeProviders.length === 0 ? (
+                      <SelectItem value="loading" disabled>
                         Cargando proveedores...
                       </SelectItem>
                     ) : (
-                      providers.map((provider) => (
-                        <SelectItem
-                          key={provider.id}
-                          value={provider.id.toString()}
-                        >
+                      activeProviders.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id.toString()}>
                           {provider.name}
                         </SelectItem>
                       ))
@@ -203,11 +213,17 @@ export function OrderModal({
                 <SelectValue placeholder="Selecciona un producto" />
               </SelectTrigger>
               <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id.toString()}>
-                    {product.description}
+                {activeProducts.length === 0 ? (
+                  <SelectItem value="loading" disabled>
+                    Cargando productos...
                   </SelectItem>
-                ))}
+                ) : (
+                  activeProducts.map((product) => (
+                    <SelectItem key={product.id} value={product.id.toString()}>
+                      {product.description}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
 
@@ -236,22 +252,19 @@ export function OrderModal({
             )}
             <ul className="space-y-2 mt-2">
               {addedProducts.map((item, index) => {
-                const prod = products.find((p) => p.id === item.productId)
+                const prod = activeProducts.find((p) => p.id === item.productId)
                 return (
                   <li
                     key={index}
                     className="flex justify-between items-center border p-2 rounded"
                   >
                     <span>
-                      {prod?.description ?? 'Producto desconocido'} (x
-                      {item.quantity})
+                      {prod?.description ?? 'Producto desconocido'} (x{item.quantity})
                     </span>
                     <Button
                       type="button"
                       onClick={() => {
-                        const updated = addedProducts.filter(
-                          (_, i) => i !== index
-                        )
+                        const updated = addedProducts.filter((_, i) => i !== index)
                         setValue('details', updated)
                       }}
                       className="text-red-500 hover:underline"
@@ -263,41 +276,25 @@ export function OrderModal({
               })}
             </ul>
           </div>
+
           <div className="flex flex-row justify-center items-center gap-x-4 pt-4">
-            <Button
-              type="submit"
-              className=" text-white px-4 py-2 rounded"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="animate-spin h-4 w-4" />
-              ) : order ? (
-                'Actualizar'
-              ) : (
-                'Crear'
-              )}
+            <Button type="submit" className="text-white px-4 py-2 rounded" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="animate-spin h-4 w-4" /> : order ? 'Actualizar' : 'Crear'}
             </Button>
+
             {order?.purchaseOrderState === 'PENDIENTE' && (
-              <div>
-                <Button
-                  className="text-white px-4 py-2 rounded"
-                  onClick={handleSend}
-                >
+              <div className="flex gap-2">
+                <Button className="text-white px-4 py-2 rounded" onClick={handleSend}>
                   Enviar orden
                 </Button>
-                <Button
-                  className="text-white px-4 py-2 rounded"
-                  onClick={handleDelete}
-                >
+                <Button className="text-white px-4 py-2 rounded" onClick={handleDelete}>
                   Cancelar orden
                 </Button>
               </div>
             )}
+
             {order?.purchaseOrderState === 'ENVIADA' && (
-              <Button
-                className="text-white px-4 py-2 rounded"
-                onClick={handleFinalize}
-              >
+              <Button className="text-white px-4 py-2 rounded" onClick={handleFinalize}>
                 Finalizar orden
               </Button>
             )}
