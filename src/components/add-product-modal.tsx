@@ -88,13 +88,10 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   }, [isOpen])
 
   const onSubmit = async (productData: ProductFormData) => {
-    console.log('productData', productData)
     const productCreated = await createProduct(productData)
     if (!productCreated) return
 
     const providerData: ProductProviderFormData = getValuesProvider()
-    console.log('productProviderData', providerData)
-    console.log('productCreated', productCreated)
     const bound = await boundProductProvider({
       productId: productCreated.id,
       ...providerData,
@@ -291,7 +288,7 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                       </SelectTrigger>
                       <SelectContent>
                         {providers.length === 0 ? (
-                          <SelectItem value="pene" disabled>
+                          <SelectItem value="hola" disabled>
                             Cargando proveedores...
                           </SelectItem>
                         ) : (

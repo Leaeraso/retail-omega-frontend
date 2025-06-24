@@ -1,3 +1,5 @@
+import { OrderTable } from '@/components/order-table'
+
 export default function Orders() {
   return (
     <div>
@@ -5,6 +7,7 @@ export default function Orders() {
         {' '}
         Ordenes
       </h1>
+      <OrderTable />
     </div>
   )
 }

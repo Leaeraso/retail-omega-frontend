@@ -88,7 +88,9 @@ export function ProductTable() {
                   </TableCell>
                   <TableCell>{product.fixedLotPolicy.reorderPoint}</TableCell>
                   <TableCell>
-                    {product.fixedIntervalPolicy.safetyStock}
+                    {product.inventoryPolicy === 'LOTE_FIJO'
+                      ? product.fixedLotPolicy?.safetyStock ?? '-'
+                      : product.fixedIntervalPolicy?.safetyStock ?? '-'}
                   </TableCell>
                   <TableCell>{product.providers[0].providerName}</TableCell>
                   <TableCell>

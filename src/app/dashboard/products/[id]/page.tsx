@@ -99,7 +99,11 @@ export default function ProductDetailPage() {
           </div>
           <div className="w-full flex flex-row justify-between my-2 p-2">
             <p>Stock de seguridad</p>
-            <span>{product.fixedLotPolicy.safetyStock}</span>
+            <span>
+              {product.inventoryPolicy === 'LOTE_FIJO'
+                ? product.fixedLotPolicy?.safetyStock ?? '-'
+                : product.fixedIntervalPolicy?.safetyStock ?? '-'}
+            </span>
           </div>
         </div>
         <div className="col-span-2 row-span-4 col-start-3 row-start-2  border border-gray-500/30 rounded-2xl p-4">
@@ -135,20 +139,31 @@ export default function ProductDetailPage() {
           </h3>
           <div className="w-full flex flex-row justify-between border-b-1 border-gray-500/30 my-2 p-2">
             <p>Stock de seguridad</p>
-            <span>{product.fixedIntervalPolicy.safetyStock}</span>
+            <span>
+              {product.inventoryPolicy === 'LOTE_FIJO'
+                ? product.fixedLotPolicy?.safetyStock ?? '-'
+                : product.fixedIntervalPolicy?.safetyStock ?? '-'}
+            </span>
           </div>
           <div className="w-full flex flex-row justify-between border-b-1 border-gray-500/30 my-2 p-2">
             <p>Intervalo de revisión</p>
-            <span>{product.fixedIntervalPolicy.reviewIntervalDays} días</span>
+            <span>
+              {product.fixedIntervalPolicy?.reviewIntervalDays
+                ? `${product.fixedIntervalPolicy?.reviewIntervalDays} dias`
+                : '-'}
+            </span>
           </div>
           <div className="w-full flex flex-row justify-between my-2 p-2 border-b-1 border-gray-500/30">
             <p>Nivel máximo de inventario</p>
-            <span>{product.fixedIntervalPolicy.maxInventoryLevel}</span>
+            <span>{product.fixedIntervalPolicy?.maxInventoryLevel ?? '-'}</span>
           </div>
           <div className="w-full flex flex-row justify-between my-2 p-2">
             <p>Ultima revisión</p>
             <span>
-              {product.fixedIntervalPolicy.lastReviewDate.replaceAll('-', '/')}
+              {product.fixedIntervalPolicy?.lastReviewDate?.replaceAll(
+                '-',
+                '/'
+              ) ?? '-'}
             </span>
           </div>
         </div>
