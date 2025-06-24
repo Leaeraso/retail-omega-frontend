@@ -50,10 +50,15 @@ export function ProviderTable() {
 
   const handleDeleteProvider = async (id: number) => {
     try {
-      await deleteProvider(id)
-      softDeleteProvider(id, new Date().toISOString())
-      fetchProviders()
-      toast.success('Proveedor eliminado correctamente')
+      const res = await deleteProvider(id)
+
+      if (res?.success) {
+        softDeleteProvider(id, new Date().toISOString())
+        fetchProviders()
+        toast.success('Proveedor eliminado correctamente')
+      } else {
+        toast.error(res?.error || 'No se pudo eliminar el proveedor')
+      }
     } catch (error) {
       console.error(error)
       toast.error('Error al eliminar proveedor')

@@ -83,9 +83,20 @@ export const deleteProvider = async (id: number) => {
         "Content-Type": "application/json",
       },
     })
-    return await res.json()
+
+    if (res.status === 204) {
+      return { success: true }
+    }
+
+    if (res.status === 400) {
+      const errorData = await res.json()
+      return { success: false, error: errorData.message || 'No se puede eliminar el proveedor' }
+    }
+
+    return { success: false, error: 'Error inesperado' }
   } catch (error) {
     console.error(error)
-    return
+    return { success: false, error: 'Error de red' }
   }
 }
+
