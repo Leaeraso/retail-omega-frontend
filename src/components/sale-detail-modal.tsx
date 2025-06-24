@@ -1,22 +1,22 @@
-import React from 'react';
-import { SaleDetailsTypes } from '../types/sales.types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
+'use client'
+
+import React from 'react'
+import { SaleDetailsTypes } from '@/types/sales.types'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Button } from './ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table'
 
 interface SaleDetailModalProps {
-    show: boolean;
-    onHide: () => void;
-    saleDetail?: SaleDetailsTypes[];
+    show: boolean
+    onHide: () => void
+    saleDetail?: SaleDetailsTypes[]
 }
 
 const SaleDetailModal: React.FC<SaleDetailModalProps> = ({ show, onHide, saleDetail }) => {
-    if (!saleDetail) return null;
+    if (!saleDetail) return null
 
     return (
-        <Dialog open={show} onOpenChange={(open) => {
-            if (!open) onHide();
-        }}>
+        <Dialog open={show} onOpenChange={(open) => !open && onHide()}>
             <DialogContent className="sm:max-w-[800px]">
                 <DialogHeader>
                     <DialogTitle>Detalle de Venta</DialogTitle>
@@ -62,7 +62,7 @@ const SaleDetailModal: React.FC<SaleDetailModalProps> = ({ show, onHide, saleDet
                 </div>
             </DialogContent>
         </Dialog>
-    );
-};
+    )
+}
 
-export default SaleDetailModal;
+export default SaleDetailModal

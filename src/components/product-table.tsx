@@ -92,7 +92,7 @@ export function ProductTable() {
                       ? product.fixedLotPolicy?.safetyStock ?? '-'
                       : product.fixedIntervalPolicy?.safetyStock ?? '-'}
                   </TableCell>
-                  <TableCell>{product.providers[0].providerName}</TableCell>
+                  <TableCell>{product.providers[0]?.providerName ?? '-'}</TableCell>
                   <TableCell>
                     <div className="flex flex-row justify-end items-center gap-x-2">
                       <Button className="hover:cursor-pointer">

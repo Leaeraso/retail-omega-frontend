@@ -50,10 +50,10 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
 
     useEffect(() => {
         if (isOpen) fetchProducts()
-    }, [isOpen])
+    }, [isOpen, fetchProducts])
 
     const onAddProduct = (data: SaleProduct) => {
-        setProducts([...products, data])
+        setProducts((prev) => [...prev, data])
         reset()
     }
 
