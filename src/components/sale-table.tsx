@@ -91,10 +91,9 @@ export function SaleTable() {
         {pagination && (
             <div
             className="flex gap-3 items-center bg-muted rounded-md px-4 py-2 absolute bottom-0 left-1/2 transform -translate-x-1/2 shadow-md"
-            style={{ backgroundColor: 'var(--background)' }} // asegúrate de que el color sea el de tu theme
+            style={{ backgroundColor: 'var(--background)' }} 
             >
             <Button
-                variant="destructive"
                 className="px-4 py-2"
                 onClick={() => fetchSales(pagination.number - 1)}
                 disabled={pagination.first}
@@ -103,7 +102,6 @@ export function SaleTable() {
             </Button>
 
             <Button
-                variant="destructive"
                 className="px-4 py-2 cursor-default select-none"
                 onClick={(e) => e.preventDefault()}
             >
@@ -111,7 +109,6 @@ export function SaleTable() {
             </Button>
 
             <Button
-                variant="destructive"
                 className="px-4 py-2"
                 onClick={() => fetchSales(pagination.number + 1)}
                 disabled={pagination.last}
