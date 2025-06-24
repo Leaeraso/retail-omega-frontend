@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { useState, useEffect } from 'react'
 import { saleProductSchema, SaleProduct } from '@/schemas/sale.schema'
 import { useProducts } from '../hooks/use-product'
-
+import toast from 'react-hot-toast'
 import {
     Dialog,
     DialogContent,
@@ -57,13 +57,21 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
         reset()
     }
 
-    const onSubmit = () => {
-        if (products.length > 0) {
-            onSave(products)
-            setProducts([])
-            onClose()
-        }
+    const onSubmit = async () => {
+  if (products.length > 0) {
+    try {
+      await onSave(products)  
+      toast.success("Venta creada correctamente")
+      setProducts([])
+      onClose()
+    } catch (error: unknown) {
+      let message = "Error al crear la venta"
+      if (error instanceof Error) message = error.message
+      toast.error(message)
     }
+  }
+}
+
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -3,6 +3,7 @@ import { getSalesPaged, createSale } from "@/services/sale.service"
 import { SaleProduct } from "@/schemas/sale.schema"
 import { useCallback } from "react"
 
+
 export function useSale() {
   const sales = useSaleStore((state) => state.sales)
   const setSales = useSaleStore((state) => state.setSales)
@@ -30,14 +31,26 @@ export function useSale() {
   )
 
   const saveSale = useCallback(
-    async (products: SaleProduct[]) => {
+  async (products: SaleProduct[]) => {
+    try {
       const sale = await createSale({ saleDetail: products })
       if (sale) {
         addSale(sale)
+        return sale
       }
-    },
-    [addSale]
-  )
+      throw new Error("Error creando la venta")
+    } catch (error: unknown) {
+      let errorMsg = "Error creando la venta"
+      if (error instanceof Error) {
+        errorMsg = error.message
+      } else if (typeof error === "string") {
+        errorMsg = error
+      }
+      throw new Error(errorMsg)
+    }
+  },
+  [addSale]
+)
 
   return { sales, fetchSales, saveSale, pagination }
 }

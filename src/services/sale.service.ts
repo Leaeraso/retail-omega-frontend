@@ -29,10 +29,20 @@ export const createSale = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!res.ok) throw new Error("Error creando venta")
+
+    if (!res.ok) {
+      let errorMsg = "Error creando venta"
+      try {
+        const errorData = await res.json()
+        if (errorData?.message) errorMsg = errorData.message
+      } catch {
+      }
+      throw new Error(errorMsg)
+    }
+
     return await res.json()
   } catch (err) {
     console.error("Error al crear venta:", err)
-    return null
+    throw err
   }
 }

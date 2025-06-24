@@ -49,7 +49,7 @@ export function SaleTable() {
         onClose={closeModal}
         onSave={async (products) => {
             await saveSale(products)
-            setRefreshTrigger((prev) => prev + 1) // 🔁 Forzamos refetch
+            setRefreshTrigger((prev) => prev + 1) 
         }}
       />
 
