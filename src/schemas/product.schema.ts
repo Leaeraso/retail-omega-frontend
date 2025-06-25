@@ -42,9 +42,9 @@ export const productSchema = z.object({
 export const createProductSchema = z.object({
   code: z.string().min(1, "El código es requerido"),
   description: z.string().min(1, "La descripción es requerida"),
-  currentStock: z.coerce.number().nonnegative("Debe ser >= 0"),
-  annualDemand: z.coerce.number().nonnegative("Debe ser >= 0"),
-  storageCost: z.coerce.number().nonnegative("Debe ser >= 0"),
+  currentStock: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
+  annualDemand: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
+  storageCost: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
   inventoryPolicy: z.enum([
     InventoryPolicy.LOTE_FIJO,
     InventoryPolicy.INTERVALO_FIJO,
@@ -55,9 +55,9 @@ export const createProductSchema = z.object({
 
 export const createProductProviderSchema = z.object({
   providerId: z.number(),
-  unitCost: z.coerce.number().nonnegative("Debe ser >= 0"),
-  leadTime: z.coerce.number().nonnegative("Debe ser >= 0"),
-  shippingCost: z.coerce.number().nonnegative("Debe ser >= 0"),
+  unitCost: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
+  leadTime: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
+  shippingCost: z.coerce.number().gt(0, { message: "Debe ser mayor que 0" }),
 })
 
 export type ProductSchema = typeof productSchema

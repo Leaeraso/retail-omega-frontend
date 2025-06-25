@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { useState, useEffect } from 'react'
 import { saleProductSchema, SaleProduct } from '@/schemas/sale.schema'
 import { useProducts } from '../hooks/use-product'
-
+import toast from 'react-hot-toast'
 import {
     Dialog,
     DialogContent,
@@ -31,7 +31,7 @@ interface Props {
 
 export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
     const [products, setProducts] = useState<SaleProduct[]>([])
-    const { products: allProducts, fetchProducts } = useProducts()
+    const { activeProducts, fetchActiveProducts } = useProducts()
 
     const {
         register,
@@ -49,21 +49,29 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
     })
 
     useEffect(() => {
-        if (isOpen) fetchProducts()
-    }, [isOpen])
+        if (isOpen) fetchActiveProducts()
+    }, [isOpen, fetchActiveProducts])
 
     const onAddProduct = (data: SaleProduct) => {
-        setProducts([...products, data])
+        setProducts((prev) => [...prev, data])
         reset()
     }
 
-    const onSubmit = () => {
-        if (products.length > 0) {
-            onSave(products)
-            setProducts([])
-            onClose()
-        }
+    const onSubmit = async () => {
+  if (products.length > 0) {
+    try {
+      await onSave(products)  
+      toast.success("Venta creada correctamente")
+      setProducts([])
+      onClose()
+    } catch (error: unknown) {
+      let message = "Error al crear la venta"
+      if (error instanceof Error) message = error.message
+      toast.error(message)
     }
+  }
+}
+
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -87,7 +95,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
                                         <SelectValue placeholder="Selecciona un producto" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {allProducts.map((p) => (
+                                        {activeProducts.map((p) => (
                                             <SelectItem key={p.id} value={String(p.id)}>
                                                 {p.code} - {p.description}
                                             </SelectItem>

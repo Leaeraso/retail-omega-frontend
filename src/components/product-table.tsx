@@ -2,52 +2,122 @@
 
 import { Button } from './ui/button'
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
+  Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from './ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ProductState } from './product-state'
 import { useRouter } from 'next/navigation'
-import { ClipboardPlus, Eye, Pen, Trash } from 'lucide-react'
+import { ClipboardPlus, Eye, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import AddProductModal from './add-product-modal'
 import { useProducts } from '@/hooks/use-product'
+import { useProviders } from '@/hooks/use-providers'
+import toast from 'react-hot-toast'
+
 
 export function ProductTable() {
   const router = useRouter()
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
-  const { products, fetchProducts, addProduct } = useProducts()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedFilter, setSelectedFilter] = useState<string>('ALL')
+  const [filterApplied, setFilterApplied] = useState(false)
+
+  const {
+    products,
+    filteredProducts,
+    fetchProducts,
+    addProduct,
+    deleteProductById,
+    fetchProductsByProvider,
+    fetchProductsBelowReorderPoint,
+    fetchProductsBelowSecurityStock,
+  } = useProducts()
+
+  const {
+    activeProviders,
+    fetchActiveProviders,
+  } = useProviders()
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+    fetchActiveProviders()
+  }, [fetchProducts, fetchActiveProviders])
 
-  const openModal = () => {
-    setIsModalOpen(true)
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de dar de baja este producto?')) return
+    try {
+      const res = await deleteProductById(id)
+      if (res.success) {
+        toast.success('Producto dado de baja correctamente')
+      } else {
+        toast.error(res.error || 'No se pudo dar de baja el producto')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error('Error al procesar la solicitud')
+    }
   }
 
-  const closeModal = () => {
-    setIsModalOpen(false)
+  const handleFilterChange = async (value: string) => {
+    setSelectedFilter(value)
+
+    if (value === 'ALL') {
+      setFilterApplied(false)
+      await fetchProducts()
+    } else {
+      setFilterApplied(true)
+      if (value === 'BELOW_STOCK') {
+        await fetchProductsBelowSecurityStock()
+      } else if (value === 'BELOW_REORDER') {
+        await fetchProductsBelowReorderPoint()
+      } else if (value.startsWith('PROVIDER_')) {
+        const id = parseInt(value.replace('PROVIDER_', ''))
+        await fetchProductsByProvider(id)
+      }
+    }
   }
+
+
+  const productsToRender = filterApplied ? filteredProducts : products
 
   return (
     <main>
-      <div className="flex flex-row justify-end items-center gap-x-2 mx-2 my-4">
-        <Button className="hover:cursor-pointer" onClick={openModal}>
+      <div className="flex flex-col sm:flex-row justify-between items-center mx-4 my-4 gap-4">
+        <div className="flex flex-row gap-2 items-center">
+          <Select value={selectedFilter} onValueChange={handleFilterChange}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Filtrar productos..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos</SelectItem>
+              <SelectItem value="BELOW_STOCK">Productos faltantes</SelectItem>
+              <SelectItem value="BELOW_REORDER">Productos a reponer</SelectItem>
+              {activeProviders.map((provider) => (
+                <SelectItem key={provider.id} value={`PROVIDER_${provider.id}`}>
+                  Proveedor {provider.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button onClick={() => setIsModalOpen(true)}>
           <ClipboardPlus className="h-4 w-4 text-white" />
-        </Button>
-        <Button className="hover:cursor-pointer">
-          <Pen className="h-4 w-4 text-white" />
         </Button>
       </div>
 
       <AddProductModal
         isOpen={isModalOpen}
-        onClose={closeModal}
-        onCreate={addProduct}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={(product) => {
+          addProduct(product)
+          fetchProducts()
+        }}
       />
 
       <div className="p-4">
@@ -64,53 +134,46 @@ export function ProductTable() {
               <TableHead>Pol. de inventario</TableHead>
               <TableHead>Punto de reorden</TableHead>
               <TableHead>Stock de seguridad</TableHead>
-              <TableHead>Proovedores</TableHead>
+              <TableHead>Proveedores</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((product) => {
-              return (
-                <TableRow key={product.id}>
-                  <TableCell>{product.code}</TableCell>
-                  <TableCell>{product.description}</TableCell>
-                  <TableCell>{product.currentStock}</TableCell>
-                  <TableCell>{product.annualDemand}</TableCell>
-                  <TableCell>$ {product.storageCost}</TableCell>
-                  <TableCell>$ {product.totalCost}</TableCell>
-                  <TableCell>
-                    <ProductState state={product.productState} />
-                  </TableCell>
-                  <TableCell>
-                    {product.inventoryPolicy === 'LOTE_FIJO'
-                      ? 'Lote Fijo'
-                      : 'Inventario Fijo'}
-                  </TableCell>
-                  <TableCell>{product.fixedLotPolicy.reorderPoint}</TableCell>
-                  <TableCell>
-                    {product.inventoryPolicy === 'LOTE_FIJO'
-                      ? product.fixedLotPolicy?.safetyStock ?? '-'
-                      : product.fixedIntervalPolicy?.safetyStock ?? '-'}
-                  </TableCell>
-                  <TableCell>{product.providers[0].providerName}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-row justify-end items-center gap-x-2">
-                      <Button className="hover:cursor-pointer">
-                        <Trash className="h-3 w-3 text-white" />
-                      </Button>
-                      <Button
-                        className=" text-white hover:cursor-pointer"
-                        onClick={() =>
-                          router.push(`/dashboard/products/${product.id}`)
-                        }
-                      >
-                        <Eye className="h-3 w-3 text-white" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
+            {productsToRender.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>{product.code}</TableCell>
+                <TableCell>{product.description}</TableCell>
+                <TableCell>{product.currentStock}</TableCell>
+                <TableCell>{product.annualDemand}</TableCell>
+                <TableCell>$ {product.storageCost}</TableCell>
+                <TableCell>$ {product.totalCost}</TableCell>
+                <TableCell>
+                  <ProductState state={product.productState} />
+                </TableCell>
+                <TableCell>
+                  {product.inventoryPolicy === 'LOTE_FIJO'
+                    ? 'Lote Fijo'
+                    : 'Inventario Fijo'}
+                </TableCell>
+                <TableCell>{product.fixedLotPolicy?.reorderPoint ?? '-'}</TableCell>
+                <TableCell>
+                  {product.inventoryPolicy === 'LOTE_FIJO'
+                    ? product.fixedLotPolicy?.safetyStock ?? '-'
+                    : product.fixedIntervalPolicy?.safetyStock ?? '-'}
+                </TableCell>
+                <TableCell>{product.providers[0]?.providerName ?? '-'}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2 justify-end">
+                    <Button onClick={() => handleDelete(product.id)}>
+                      <Trash className="h-3 w-3 text-white" />
+                    </Button>
+                    <Button onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                      <Eye className="h-3 w-3 text-white" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
