@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { ProductState } from './product-state'
 import { useRouter } from 'next/navigation'
-import { ClipboardPlus, Eye, Trash } from 'lucide-react'
+import { ClipboardPlus, Eye, Trash, Pencil } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import AddProductModal from './add-product-modal'
 import { useProducts } from '@/hooks/use-product'
@@ -146,7 +146,7 @@ export function ProductTable() {
                 <TableCell>{product.currentStock}</TableCell>
                 <TableCell>{product.annualDemand}</TableCell>
                 <TableCell>$ {product.storageCost}</TableCell>
-                <TableCell>$ {product.totalCost}</TableCell>
+                <TableCell>$ {typeof product.totalCost === 'number' ? product.totalCost.toFixed(2) : '0.00'}</TableCell>
                 <TableCell>
                   <ProductState state={product.productState} />
                 </TableCell>
@@ -169,6 +169,9 @@ export function ProductTable() {
                     </Button>
                     <Button onClick={() => router.push(`/dashboard/products/${product.id}`)}>
                       <Eye className="h-3 w-3 text-white" />
+                    </Button>
+                    <Button /*onClick={() => handleEdit(product)}*/>
+                      <Pencil className="h-3 w-3 text-white" />
                     </Button>
                   </div>
                 </TableCell>

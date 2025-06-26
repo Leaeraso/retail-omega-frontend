@@ -17,16 +17,10 @@ import { useProviders } from '@/hooks/use-providers'
 import { useEffect, useState } from 'react'
 import { Label } from './ui/label'
 import { useProducts } from '@/hooks/use-product'
-import {
-  createOrder,
-  deleteOrder,
-  finalizeOrder,
-  sendOrder,
-  updateOrder,
-} from '@/services/order.service'
 import { Button } from './ui/button'
 import { Loader2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useOrder } from '@/hooks/use-order'
 
 interface Props {
   isOpen: boolean
@@ -36,13 +30,7 @@ interface Props {
   order?: Order | null
 }
 
-export function OrderModal({
-  isOpen,
-  onClose,
-  onCreate,
-  onUpdate,
-  order,
-}: Props) {
+export function OrderModal({ isOpen, onClose, order }: Props) {
   const {
     handleSubmit,
     control,
@@ -53,125 +41,97 @@ export function OrderModal({
     formState: { isSubmitting },
   } = useForm<OrderFormData>({
     resolver: zodResolver(createOrderSchema),
-    defaultValues: {
-      providerId: 0,
-      details: [],
-    },
+    defaultValues: { providerId: 0, details: [] },
   })
 
   const { activeProviders, fetchActiveProviders } = useProviders()
-  const { activeProducts, fetchActiveProducts } = useProducts()
+  const {  filteredProducts, fetchProductsByProvider } = useProducts()
+  const { updateOrder, addOrder } = useOrder()
 
   const [selectedProductId, setSelectedProductId] = useState<number>(0)
   const [quantity, setQuantity] = useState<number>(1)
 
   const addedProducts = watch('details')
+  const selectedProviderId = watch('providerId')
+
 
   useEffect(() => {
-    if (isOpen && activeProviders.length === 0) {
-      fetchActiveProviders()
+    if (isOpen) {
+      if (activeProviders.length === 0) fetchActiveProviders()
     }
-    if (isOpen && activeProducts.length === 0) {
-      fetchActiveProducts()
+  }, [isOpen, activeProviders.length, fetchActiveProviders])
+
+  useEffect(() => {
+    if (selectedProviderId && selectedProviderId !== 0) {
+      fetchProductsByProvider(selectedProviderId)
+    
+      setSelectedProductId(0)
+      setValue('details', [])
+    } else {
+      fetchProductsByProvider(0)
+      setSelectedProductId(0)
+      setValue('details', [])
     }
-  }, [isOpen, activeProviders.length, activeProducts.length, fetchActiveProviders, fetchActiveProducts])
+  }, [selectedProviderId, fetchProductsByProvider, setValue])
 
   useEffect(() => {
     if (order) {
-      // Al abrir con orden para editar, seteo valores del formulario
-      reset({
-        providerId: order.providerId,
-        details: order.details,
-      })
+      reset({ providerId: order.providerId, details: order.details })
+      if (order.providerId) {
+        fetchProductsByProvider(order.providerId)
+      }
     } else {
-      reset({
-        providerId: 0,
-        details: [],
-      })
+      reset({ providerId: 0, details: [] })
+      fetchProductsByProvider(0)
     }
-  }, [order, reset])
+  }, [order, reset, fetchProductsByProvider])
 
   const addProduct = () => {
     if (selectedProductId && quantity > 0) {
       const current = getValues('details') || []
-      const alreadyExists = current.some((p) => p.productId === selectedProductId)
-
-      if (!alreadyExists) {
-        setValue('details', [...current, { productId: selectedProductId, quantity }])
-        setSelectedProductId(0)
-        setQuantity(1)
-      } else {
+      if (current.some((p) => p.productId === selectedProductId)) {
         toast.error('El producto ya fue agregado')
+        return
       }
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!order) return
-    try {
-      await deleteOrder(order.id)
-      toast.success('Pedido cancelado correctamente')
-      onClose()
-    } catch (error) {
-      console.error('Error al eliminar la orden:', error)
-      toast.error('Error al cancelar la orden')
-    }
-  }
-
-  const handleSend = async () => {
-    if (!order) return
-    try {
-      await sendOrder(order.id)
-      toast.success('Pedido enviado correctamente')
-      onClose()
-    } catch (error) {
-      console.error('Error al enviar la orden:', error)
-      toast.error('Error al enviar la orden')
-    }
-  }
-
-  const handleFinalize = async () => {
-    if (!order) return
-    try {
-      await finalizeOrder(order.id)
-      toast.success('Pedido finalizado correctamente')
-      onClose()
-    } catch (error) {
-      console.error('Error al finalizar la orden:', error)
-      toast.error('Error al finalizar la orden')
+      setValue('details', [...current, { productId: selectedProductId, quantity }])
+      setSelectedProductId(0)
+      setQuantity(1)
+    } else {
+      toast.error('Selecciona un producto y cantidad válida')
     }
   }
 
   const onSubmit = async (orderData: OrderFormData) => {
-    if (order) {
-      await updateOrder(order.id, orderData)
-      onUpdate(order.id, orderData)
-      toast.success('Pedido actualizado correctamente')
-    } else {
-      const createdOrder = await createOrder(orderData)
-      if (!createdOrder) {
-        toast.error('Error al crear el pedido')
-        return
+    try {
+      if (order) {
+        const updated = await updateOrder(order.id, orderData)
+        if (!updated) throw new Error('Error al actualizar el pedido')
+        toast.success('Pedido actualizado correctamente')
+      } else {
+        const createdOrder = await addOrder(orderData)
+        if (!createdOrder) throw new Error('Error al crear el pedido')
+        toast.success('Pedido creado correctamente')
       }
-      onCreate(createdOrder)
-      toast.success('Pedido creado correctamente')
+      reset()
+      onClose()
+    } catch (error) {
+      toast.error((error as Error).message || 'Error en la operación')
     }
-    reset()
-    onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogHeader className="w-full flex justify-center items-center">
-            <DialogTitle className="text-2xl font-bold">
+      <DialogContent className="max-w-md mx-auto p-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <DialogHeader className="flex justify-center items-center pb-2">
+            <DialogTitle className="text-xl font-semibold">
               {order ? 'Editar Pedido' : 'Crear Pedido'}
             </DialogTitle>
           </DialogHeader>
 
+          {/* Select Proveedor */}
           <div>
-            <Label htmlFor="providerId" className="py-2">
+            <Label htmlFor="providerId" className="py-1 text-sm font-medium">
               Proveedor
             </Label>
             <Controller
@@ -182,7 +142,7 @@ export function OrderModal({
                   value={field.value ? field.value.toString() : ''}
                   onValueChange={(value) => field.onChange(Number(value))}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full py-1 text-sm">
                     <SelectValue placeholder="Selecciona un proveedor" />
                   </SelectTrigger>
                   <SelectContent>
@@ -203,22 +163,28 @@ export function OrderModal({
             />
           </div>
 
-          <div className="mt-4 space-y-2">
-            <Label>Producto</Label>
+          {/* Select Producto */}
+          <div className="space-y-1">
+            <Label className="text-sm font-medium">Producto</Label>
             <Select
               value={selectedProductId ? selectedProductId.toString() : ''}
               onValueChange={(value) => setSelectedProductId(Number(value))}
+              disabled={!selectedProviderId || selectedProviderId === 0}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full py-1 text-sm">
                 <SelectValue placeholder="Selecciona un producto" />
               </SelectTrigger>
               <SelectContent>
-                {activeProducts.length === 0 ? (
+                {!selectedProviderId || selectedProviderId === 0 ? (
+                  <SelectItem value="no-provider" disabled>
+                    Debes seleccionar un proveedor
+                  </SelectItem>
+                ) :  filteredProducts.length === 0 ? (
                   <SelectItem value="loading" disabled>
                     Cargando productos...
                   </SelectItem>
                 ) : (
-                  activeProducts.map((product) => (
+                   filteredProducts.map((product) => (
                     <SelectItem key={product.id} value={product.id.toString()}>
                       {product.description}
                     </SelectItem>
@@ -227,77 +193,69 @@ export function OrderModal({
               </SelectContent>
             </Select>
 
-            <Label className="mt-2">Cantidad</Label>
+            <Label className="mt-2 text-sm font-medium">Cantidad</Label>
             <input
               type="number"
               min={1}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-full border px-2 py-1 rounded"
+              className="w-full border px-2 py-1 rounded text-sm"
             />
 
             <button
               type="button"
               onClick={addProduct}
-              className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
+              className="mt-2 bg-blue-600 text-white text-sm px-3 py-1.5 rounded"
             >
               Agregar producto
             </button>
           </div>
 
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold">Productos agregados:</h3>
-            {addedProducts.length === 0 && (
-              <p className="text-sm text-gray-500">No hay productos aún.</p>
-            )}
-            <ul className="space-y-2 mt-2">
-              {addedProducts.map((item, index) => {
-                const prod = activeProducts.find((p) => p.id === item.productId)
-                return (
-                  <li
-                    key={index}
-                    className="flex justify-between items-center border p-2 rounded"
-                  >
-                    <span>
-                      {prod?.description ?? 'Producto desconocido'} (x{item.quantity})
-                    </span>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const updated = addedProducts.filter((_, i) => i !== index)
-                        setValue('details', updated)
-                      }}
-                      className="text-red-500 hover:underline"
+          {/* Lista de productos agregados */}
+          <div>
+            <h3 className="text-md font-semibold mb-1">Productos agregados:</h3>
+            {addedProducts.length === 0 ? (
+              <p className="text-xs text-gray-500">No hay productos aún.</p>
+            ) : (
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {addedProducts.map((item, index) => {
+                  const prod =  filteredProducts.find((p) => p.id === item.productId)
+                  return (
+                    <li
+                      key={index}
+                      className="flex justify-between items-center border p-1 rounded text-sm"
                     >
-                      <X className="text-white h-3 w-3 rounded-full" />
-                    </Button>
-                  </li>
-                )
-              })}
-            </ul>
+                      <span>
+                        {prod?.description ?? 'Producto desconocido'} (x{item.quantity})
+                      </span>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const updated = addedProducts.filter((_, i) => i !== index)
+                          setValue('details', updated)
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:underline p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </div>
 
-          <div className="flex flex-row justify-center items-center gap-x-4 pt-4">
-            <Button type="submit" className="text-white px-4 py-2 rounded" disabled={isSubmitting}>
+          {/* Botón submit */}
+          <div className="flex justify-center items-center gap-3 pt-3">
+            <Button
+              type="submit"
+              className="text-white text-sm px-4 py-2 rounded"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? <Loader2 className="animate-spin h-4 w-4" /> : order ? 'Actualizar' : 'Crear'}
             </Button>
-
-            {order?.purchaseOrderState === 'PENDIENTE' && (
-              <div className="flex gap-2">
-                <Button className="text-white px-4 py-2 rounded" onClick={handleSend}>
-                  Enviar orden
-                </Button>
-                <Button className="text-white px-4 py-2 rounded" onClick={handleDelete}>
-                  Cancelar orden
-                </Button>
-              </div>
-            )}
-
-            {order?.purchaseOrderState === 'ENVIADA' && (
-              <Button className="text-white px-4 py-2 rounded" onClick={handleFinalize}>
-                Finalizar orden
-              </Button>
-            )}
           </div>
         </form>
       </DialogContent>

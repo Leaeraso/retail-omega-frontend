@@ -2,7 +2,7 @@ export interface Order {
   id: number
   createdAt: string
   sentAt: string
-  recievedAt: string
+  receivedAt: string
   total: number
   purchaseOrderState: string
   providerId: number
@@ -21,7 +21,7 @@ export interface OrderDetail {
 
 export interface OrderFormInput {
   providerId: number
-  detials: {
+  details: {
     productId: number
     quantity: number
   }[]

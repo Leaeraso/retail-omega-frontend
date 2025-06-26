@@ -1,4 +1,5 @@
 import { OrderFormData } from "@/schemas/order.schema"
+import { Order } from "@/types/order.types"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -22,20 +23,23 @@ export const createOrder = async (order: OrderFormData) => {
   try {
     const res = await fetch(`${BASE_URL}/purchase-orders`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(order),
     })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      const message = errorData?.message || `Error ${res.status}`
+      throw new Error(message)
+    }
+
     const data = await res.json()
     return data
   } catch (error) {
-    console.error(error)
-    return null
+    throw error
   }
 }
-
-export const updateOrder = async (id: number, order: OrderFormData) => {
+export const updateOrder = async (id: number, order: OrderFormData): Promise<Order | null> => {
   try {
     const res = await fetch(`${BASE_URL}/purchase-orders/${id}`, {
       method: "PUT",
@@ -85,12 +89,17 @@ export const sendOrder = async (id: number) => {
 
 export const finalizeOrder = async (id: number) => {
   try {
-    fetch(`${BASE_URL}/purchase-orders/${id}/finalize`, {
+    const response = await fetch(`${BASE_URL}/purchase-orders/${id}/finalize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
     })
+
+    if (!response.ok) {
+      throw new Error("Error al finalizar la orden")
+    }
+
     return
   } catch (error) {
     console.error(error)
