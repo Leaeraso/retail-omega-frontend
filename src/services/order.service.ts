@@ -89,12 +89,17 @@ export const sendOrder = async (id: number) => {
 
 export const finalizeOrder = async (id: number) => {
   try {
-    fetch(`${BASE_URL}/purchase-orders/${id}/finalize`, {
+    const response = await fetch(`${BASE_URL}/purchase-orders/${id}/finalize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
     })
+
+    if (!response.ok) {
+      throw new Error("Error al finalizar la orden")
+    }
+
     return
   } catch (error) {
     console.error(error)

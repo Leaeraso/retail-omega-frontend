@@ -51,19 +51,29 @@ export function OrderTable() {
   }
 
   const handleSend = async (id: number) => {
+    const confirm = window.confirm('¿Estás seguro que deseas ENVIAR esta orden de compra?')
+    if (!confirm) return
+
     await sendOrder(id)
     fetchOrders()
   }
 
   const handleCancel = async (id: number) => {
+    const confirm = window.confirm('¿Estás seguro que deseas CANCELAR esta orden de compra?')
+    if (!confirm) return
+
     await deleteOrder(id)
     fetchOrders()
   }
 
   const handleFinalize = async (id: number) => {
+    const confirm = window.confirm('¿Estás seguro que deseas FINALIZAR esta orden de compra?')
+    if (!confirm) return
+
     await finalizeOrder(id)
     fetchOrders()
   }
+
 
   return (
     <main>
