@@ -34,7 +34,7 @@ export function OrderTable() {
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [fetchOrders])
 
   const openModal = () => {
     setIsModalOpen(true)

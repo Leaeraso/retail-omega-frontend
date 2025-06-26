@@ -45,29 +45,46 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
   })
 
   const { activeProviders, fetchActiveProviders } = useProviders()
-  const { activeProducts, fetchActiveProducts } = useProducts()
+  const {  filteredProducts, fetchProductsByProvider } = useProducts()
   const { updateOrder, addOrder } = useOrder()
 
-  // Estado local para producto + cantidad
   const [selectedProductId, setSelectedProductId] = useState<number>(0)
   const [quantity, setQuantity] = useState<number>(1)
 
   const addedProducts = watch('details')
+  const selectedProviderId = watch('providerId')
+
 
   useEffect(() => {
     if (isOpen) {
       if (activeProviders.length === 0) fetchActiveProviders()
-      if (activeProducts.length === 0) fetchActiveProducts()
     }
-  }, [isOpen, activeProviders.length, activeProducts.length, fetchActiveProviders, fetchActiveProducts])
+  }, [isOpen, activeProviders.length, fetchActiveProviders])
+
+  useEffect(() => {
+    if (selectedProviderId && selectedProviderId !== 0) {
+      fetchProductsByProvider(selectedProviderId)
+    
+      setSelectedProductId(0)
+      setValue('details', [])
+    } else {
+      fetchProductsByProvider(0)
+      setSelectedProductId(0)
+      setValue('details', [])
+    }
+  }, [selectedProviderId, fetchProductsByProvider, setValue])
 
   useEffect(() => {
     if (order) {
       reset({ providerId: order.providerId, details: order.details })
+      if (order.providerId) {
+        fetchProductsByProvider(order.providerId)
+      }
     } else {
       reset({ providerId: 0, details: [] })
+      fetchProductsByProvider(0)
     }
-  }, [order, reset])
+  }, [order, reset, fetchProductsByProvider])
 
   const addProduct = () => {
     if (selectedProductId && quantity > 0) {
@@ -86,13 +103,11 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
 
   const onSubmit = async (orderData: OrderFormData) => {
     try {
-      console.log('Datos del formulario:', orderData)
       if (order) {
         const updated = await updateOrder(order.id, orderData)
         if (!updated) throw new Error('Error al actualizar el pedido')
         toast.success('Pedido actualizado correctamente')
       } else {
-        console.log('orderData', orderData)
         const createdOrder = await addOrder(orderData)
         if (!createdOrder) throw new Error('Error al crear el pedido')
         toast.success('Pedido creado correctamente')
@@ -114,6 +129,7 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
             </DialogTitle>
           </DialogHeader>
 
+          {/* Select Proveedor */}
           <div>
             <Label htmlFor="providerId" className="py-1 text-sm font-medium">
               Proveedor
@@ -147,22 +163,28 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
             />
           </div>
 
+          {/* Select Producto */}
           <div className="space-y-1">
             <Label className="text-sm font-medium">Producto</Label>
             <Select
               value={selectedProductId ? selectedProductId.toString() : ''}
               onValueChange={(value) => setSelectedProductId(Number(value))}
+              disabled={!selectedProviderId || selectedProviderId === 0}
             >
               <SelectTrigger className="w-full py-1 text-sm">
                 <SelectValue placeholder="Selecciona un producto" />
               </SelectTrigger>
               <SelectContent>
-                {activeProducts.length === 0 ? (
+                {!selectedProviderId || selectedProviderId === 0 ? (
+                  <SelectItem value="no-provider" disabled>
+                    Debes seleccionar un proveedor
+                  </SelectItem>
+                ) :  filteredProducts.length === 0 ? (
                   <SelectItem value="loading" disabled>
                     Cargando productos...
                   </SelectItem>
                 ) : (
-                  activeProducts.map((product) => (
+                   filteredProducts.map((product) => (
                     <SelectItem key={product.id} value={product.id.toString()}>
                       {product.description}
                     </SelectItem>
@@ -189,6 +211,7 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
             </button>
           </div>
 
+          {/* Lista de productos agregados */}
           <div>
             <h3 className="text-md font-semibold mb-1">Productos agregados:</h3>
             {addedProducts.length === 0 ? (
@@ -196,7 +219,7 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
             ) : (
               <ul className="space-y-1 max-h-40 overflow-y-auto">
                 {addedProducts.map((item, index) => {
-                  const prod = activeProducts.find((p) => p.id === item.productId)
+                  const prod =  filteredProducts.find((p) => p.id === item.productId)
                   return (
                     <li
                       key={index}
@@ -224,6 +247,7 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
             )}
           </div>
 
+          {/* Botón submit */}
           <div className="flex justify-center items-center gap-3 pt-3">
             <Button
               type="submit"
