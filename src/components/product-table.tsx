@@ -2,7 +2,12 @@
 
 import { Button } from './ui/button'
 import {
-  Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
 } from './ui/table'
 import {
   Select,
@@ -10,7 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import { ProductState } from './product-state'
 import { useRouter } from 'next/navigation'
 import { ClipboardPlus, Eye, Trash, Pencil } from 'lucide-react'
@@ -19,7 +24,6 @@ import AddProductModal from './add-product-modal'
 import { useProducts } from '@/hooks/use-product'
 import { useProviders } from '@/hooks/use-providers'
 import toast from 'react-hot-toast'
-
 
 export function ProductTable() {
   const router = useRouter()
@@ -38,10 +42,7 @@ export function ProductTable() {
     fetchProductsBelowSecurityStock,
   } = useProducts()
 
-  const {
-    activeProviders,
-    fetchActiveProviders,
-  } = useProviders()
+  const { activeProviders, fetchActiveProviders } = useProviders()
 
   useEffect(() => {
     fetchProducts()
@@ -82,8 +83,13 @@ export function ProductTable() {
     }
   }
 
-
-  const productsToRender = filterApplied ? filteredProducts : products
+  const productsToRender = Array.isArray(
+    filterApplied ? filteredProducts : products
+  )
+    ? filterApplied
+      ? filteredProducts
+      : products
+    : []
 
   return (
     <main>
@@ -146,7 +152,12 @@ export function ProductTable() {
                 <TableCell>{product.currentStock}</TableCell>
                 <TableCell>{product.annualDemand}</TableCell>
                 <TableCell>$ {product.storageCost}</TableCell>
-                <TableCell>$ {typeof product.totalCost === 'number' ? product.totalCost.toFixed(2) : '0.00'}</TableCell>
+                <TableCell>
+                  ${' '}
+                  {typeof product.totalCost === 'number'
+                    ? product.totalCost.toFixed(2)
+                    : '0.00'}
+                </TableCell>
                 <TableCell>
                   <ProductState state={product.productState} />
                 </TableCell>
@@ -155,19 +166,27 @@ export function ProductTable() {
                     ? 'Lote Fijo'
                     : 'Inventario Fijo'}
                 </TableCell>
-                <TableCell>{product.fixedLotPolicy?.reorderPoint ?? '-'}</TableCell>
+                <TableCell>
+                  {product.fixedLotPolicy?.reorderPoint ?? '-'}
+                </TableCell>
                 <TableCell>
                   {product.inventoryPolicy === 'LOTE_FIJO'
                     ? product.fixedLotPolicy?.safetyStock ?? '-'
                     : product.fixedIntervalPolicy?.safetyStock ?? '-'}
                 </TableCell>
-                <TableCell>{product.providers[0]?.providerName ?? '-'}</TableCell>
+                <TableCell>
+                  {product.providers[0]?.providerName ?? '-'}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-2 justify-end">
                     <Button onClick={() => handleDelete(product.id)}>
                       <Trash className="h-3 w-3 text-white" />
                     </Button>
-                    <Button onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                    <Button
+                      onClick={() =>
+                        router.push(`/dashboard/products/${product.id}`)
+                      }
+                    >
                       <Eye className="h-3 w-3 text-white" />
                     </Button>
                     <Button /*onClick={() => handleEdit(product)}*/>

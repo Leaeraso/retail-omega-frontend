@@ -16,10 +16,14 @@ export function useProducts() {
 
   const setProducts = useProductStore((state) => state.setProducts)
   const setActiveProducts = useProductStore((state) => state.setActiveProducts)
-  const setFilteredProducts = useProductStore((state) => state.setFilteredProducts)
+  const setFilteredProducts = useProductStore(
+    (state) => state.setFilteredProducts
+  )
 
   const addProduct = useProductStore((state) => state.addProduct)
-  const updateProductState = useProductStore((state) => state.updateProductState)
+  const updateProductState = useProductStore(
+    (state) => state.updateProductState
+  )
 
   const fetchProducts = useCallback(async () => {
     const res = await getProducts()
@@ -36,28 +40,34 @@ export function useProducts() {
     }
   }, [setActiveProducts])
 
-  const fetchProductsByProvider = useCallback(async (providerId: number) => {
-    const res = await getProductsByProvider(providerId)
-    if (res) setFilteredProducts(res)
-  }, [setFilteredProducts])
+  const fetchProductsByProvider = useCallback(
+    async (providerId: number) => {
+      const res = await getProductsByProvider(providerId)
+      setFilteredProducts(Array.isArray(res) ? res : [])
+    },
+    [setFilteredProducts]
+  )
 
   const fetchProductsBelowSecurityStock = useCallback(async () => {
     const res = await getProductsBelowSecurityStock()
-    if (res) setFilteredProducts(res)
+    setFilteredProducts(Array.isArray(res) ? res : [])
   }, [setFilteredProducts])
 
   const fetchProductsBelowReorderPoint = useCallback(async () => {
     const res = await getProductsBelowReorderPoint()
-    if (res) setFilteredProducts(res)
+    setFilteredProducts(Array.isArray(res) ? res : [])
   }, [setFilteredProducts])
 
-  const deleteProductById = useCallback(async (id: number) => {
-    const res = await deleteProducts(id)
-    if (res.success) {
-      updateProductState(id, 'BAJA')
-    }
-    return res
-  }, [updateProductState])
+  const deleteProductById = useCallback(
+    async (id: number) => {
+      const res = await deleteProducts(id)
+      if (res.success) {
+        updateProductState(id, "BAJA")
+      }
+      return res
+    },
+    [updateProductState]
+  )
 
   return {
     products,
@@ -69,6 +79,6 @@ export function useProducts() {
     deleteProductById,
     fetchProductsByProvider,
     fetchProductsBelowSecurityStock,
-    fetchProductsBelowReorderPoint
+    fetchProductsBelowReorderPoint,
   }
 }

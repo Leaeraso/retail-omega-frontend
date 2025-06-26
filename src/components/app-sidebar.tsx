@@ -28,23 +28,23 @@ const data = {
   },
   navMain: [
     {
-      title: 'Providers',
+      title: 'Proveedores',
       url: '/dashboard/providers',
       icon: SquareTerminal,
       isActive: true,
     },
     {
-      title: 'Products',
+      title: 'Productos',
       url: '/dashboard/products',
       icon: Bot,
     },
     {
-      title: 'Orders',
+      title: 'Ordenes de compra',
       url: '/dashboard/orders',
       icon: BookOpen,
     },
     {
-      title: 'Sales',
+      title: 'Ventas',
       url: '/dashboard/sales',
       icon: Settings2,
     },
