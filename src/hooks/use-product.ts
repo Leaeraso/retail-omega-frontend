@@ -21,9 +21,7 @@ export function useProducts() {
   )
 
   const addProduct = useProductStore((state) => state.addProduct)
-  const updateProductState = useProductStore(
-    (state) => state.updateProductState
-  )
+  const updateProduct = useProductStore((state) => state.updateProduct)
 
   const fetchProducts = useCallback(async () => {
     const res = await getProducts()
@@ -62,11 +60,11 @@ export function useProducts() {
     async (id: number) => {
       const res = await deleteProducts(id)
       if (res.success) {
-        updateProductState(id, "BAJA")
+        updateProduct(id, { productState: "BAJA" })
       }
       return res
     },
-    [updateProductState]
+    [updateProduct]
   )
 
   return {
@@ -80,5 +78,6 @@ export function useProducts() {
     fetchProductsByProvider,
     fetchProductsBelowSecurityStock,
     fetchProductsBelowReorderPoint,
+    updateProduct,
   }
 }

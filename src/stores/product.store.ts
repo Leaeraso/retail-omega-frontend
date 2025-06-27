@@ -9,7 +9,7 @@ interface ProductStore {
   setActiveProducts: (p: Product[]) => void
   setFilteredProducts: (p: Product[]) => void
   addProduct: (p: Product) => void
-  updateProductState: (id: number, newState: string) => void
+  updateProduct: (id: number, p: Partial<Product>) => void
 }
 
 export const useProductStore = create<ProductStore>((set) => ({
@@ -27,10 +27,10 @@ export const useProductStore = create<ProductStore>((set) => ({
           ? [...state.activeProducts, product]
           : state.activeProducts,
     })),
-  updateProductState: (id, newState) =>
+  updateProduct: (id, product) =>
     set((state) => ({
       products: state.products.map((p) =>
-        p.id === id ? { ...p, productState: newState } : p
+        p.id === id ? { ...p, product } : p
       ),
       activeProducts: state.activeProducts.filter((p) => p.id !== id),
     })),

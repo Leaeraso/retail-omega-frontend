@@ -1,6 +1,5 @@
 import { ProductFormInput } from "@/types/product.types"
 
-
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 export const createProduct = async (product: ProductFormInput) => {
   try {
@@ -71,7 +70,8 @@ export const getProductsByProvider = async (providerId: number) => {
 export const getProductsBelowSecurityStock = async () => {
   try {
     const res = await fetch(`${BASE_URL}/products/belowSecurityStock`)
-    if (!res.ok) throw new Error("Error al obtener productos bajo stock de seguridad")
+    if (!res.ok)
+      throw new Error("Error al obtener productos bajo stock de seguridad")
     return await res.json()
   } catch (err) {
     console.error(err)
@@ -82,13 +82,32 @@ export const getProductsBelowSecurityStock = async () => {
 export const getProductsBelowReorderPoint = async () => {
   try {
     const res = await fetch(`${BASE_URL}/products/belowReorderPoint`)
-    if (!res.ok) throw new Error("Error al obtener productos bajo punto de pedido")
+    if (!res.ok)
+      throw new Error("Error al obtener productos bajo punto de pedido")
     return await res.json()
   } catch (err) {
     console.error(err)
     return null
   }
 }
+
+export const updateProduct = async (productId: number, p: ProductFormInput) => {
+  try {
+    const res = await fetch(`${BASE_URL}/products/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(p),
+    })
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error(error)
+    return {}
+  }
+}
+
 export const deleteProducts = async (id: number) => {
   try {
     const res = await fetch(`${BASE_URL}/products/${id}`, {
@@ -102,11 +121,14 @@ export const deleteProducts = async (id: number) => {
     }
     if (res.status === 400) {
       const errorData = await res.json()
-      return { success: false, error: errorData.message || 'No se puede eliminar el producto' }
+      return {
+        success: false,
+        error: errorData.message || "No se puede eliminar el producto",
+      }
     }
-    return { success: false, error: 'Error inesperado' }
+    return { success: false, error: "Error inesperado" }
   } catch (error) {
     console.error(error)
-    return { success: false, error: 'Error de red' }
+    return { success: false, error: "Error de red" }
   }
 }

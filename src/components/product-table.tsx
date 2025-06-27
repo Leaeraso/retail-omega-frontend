@@ -24,12 +24,14 @@ import AddProductModal from './add-product-modal'
 import { useProducts } from '@/hooks/use-product'
 import { useProviders } from '@/hooks/use-providers'
 import toast from 'react-hot-toast'
+import { Product } from '@/types/product.types'
 
 export function ProductTable() {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL')
   const [filterApplied, setFilterApplied] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const {
     products,
@@ -40,9 +42,18 @@ export function ProductTable() {
     fetchProductsByProvider,
     fetchProductsBelowReorderPoint,
     fetchProductsBelowSecurityStock,
+    updateProduct,
   } = useProducts()
 
   const { activeProviders, fetchActiveProviders } = useProviders()
+
+  const openModal = () => {
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+  }
 
   useEffect(() => {
     fetchProducts()
@@ -83,6 +94,11 @@ export function ProductTable() {
     }
   }
 
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product)
+    openModal()
+  }
+
   const productsToRender = Array.isArray(
     filterApplied ? filteredProducts : products
   )
@@ -112,18 +128,23 @@ export function ProductTable() {
           </Select>
         </div>
 
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={openModal}>
           <ClipboardPlus className="h-4 w-4 text-white" />
         </Button>
       </div>
 
       <AddProductModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         onCreate={(product) => {
           addProduct(product)
           fetchProducts()
         }}
+        onUpdate={(id, product) => {
+          updateProduct(id, product)
+          fetchProducts()
+        }}
+        product={editingProduct}
       />
 
       <div className="p-4">
@@ -189,7 +210,7 @@ export function ProductTable() {
                     >
                       <Eye className="h-3 w-3 text-white" />
                     </Button>
-                    <Button /*onClick={() => handleEdit(product)}*/>
+                    <Button onClick={() => handleEdit(product)}>
                       <Pencil className="h-3 w-3 text-white" />
                     </Button>
                   </div>

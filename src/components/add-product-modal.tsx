@@ -23,27 +23,40 @@ import {
 } from './ui/select'
 import { useProductProviderStore } from '@/stores/product-provider.store'
 import { useEffect, useState } from 'react'
-import { createProduct } from '@/services/product.service'
+import { createProduct, updateProduct } from '@/services/product.service'
 
 import { useProviders } from '@/hooks/use-providers' // <--- IMPORTA EL HOOK CORRECTAMENTE
 import {
   boundProductProvider,
   setDefaultProductProvider,
+  updateProviderProduct,
 } from '@/services/product-provider.service'
+import toast from 'react-hot-toast'
+import { Loader2 } from 'lucide-react'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   onCreate: (p: Product) => void
+  onUpdate: (id: number, p: ProductFormData) => void
+  product?: Product | null
 }
 
-export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
+export default function AddProductModal({
+  isOpen,
+  onClose,
+  onCreate,
+  onUpdate,
+  product,
+}: Props) {
   const {
     register: registerProduct,
     handleSubmit: handleSubmitProduct,
     reset: resetProduct,
     control: controlProduct,
-    formState: { errors: errorsProduct },
+    setValue,
+    reset,
+    formState: { errors: errorsProduct, isSubmitting },
   } = useForm<ProductFormData>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
@@ -63,6 +76,8 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
     getValues: getValuesProvider,
     reset: resetProductProvider,
     control: controlProductProvider,
+    setValue: setProviderValue,
+    reset: resetProvider,
     formState: { errors: errorsProductProvider },
     watch: watchProvider,
   } = useForm<ProductProviderFormData>({
@@ -81,6 +96,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
   const addProductProvider = useProductProviderStore(
     (state) => state.addProductProvider
   )
+  const updateProductProvider = useProductProviderStore(
+    (state) => state.updateProductProvider
+  )
   const [isLoteFijo, setIsLoteFijo] = useState(true)
 
   // Uso el hook correcto useProviders
@@ -90,21 +108,78 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
     if (isOpen && activeProviders.length === 0) {
       fetchActiveProviders()
     }
-  }, [isOpen, activeProviders.length, fetchActiveProviders])
+    if (product) {
+      setValue('code', product.code)
+      setValue('description', product.description)
+      setValue('currentStock', product.currentStock)
+      setValue('annualDemand', product.annualDemand)
+      setValue('storageCost', product.storageCost)
+      setValue('inventoryPolicy', product.inventoryPolicy)
+      setValue(
+        'safetyStock',
+        product.inventoryPolicy === 'LOTE_FIJO'
+          ? product.fixedLotPolicy?.safetyStock
+          : product.fixedIntervalPolicy?.safetyStock
+      )
+      setValue(
+        'reviewIntervalDays',
+        product.inventoryPolicy === 'LOTE_FIJO'
+          ? 0
+          : product.fixedIntervalPolicy?.reviewIntervalDays
+      )
+      setProviderValue('providerId', product.providers[0].id)
+      setProviderValue('unitCost', product.providers[0].unitCost)
+      setProviderValue('leadTime', product.providers[0].leadTime)
+      setProviderValue('shippingCost', product.providers[0].shippingCost)
+    } else {
+      reset()
+      resetProvider()
+    }
+  }, [
+    isOpen,
+    activeProviders.length,
+    fetchActiveProviders,
+    product,
+    reset,
+    resetProvider,
+    setValue,
+    setProviderValue,
+  ])
 
   const onSubmit = async (productData: ProductFormData) => {
-    const productCreated = await createProduct(productData)
-    if (!productCreated) return
+    if (product) {
+      const res = await updateProduct(product.id, productData)
+      onUpdate(product.id, res)
+      if (isProviderSelected) {
+        if (res.ok) {
+          const res2 = await updateProviderProduct(product.id, {
+            ...getValuesProvider(),
+            productId: product.id,
+          })
+          if (res2.ok)
+            updateProductProvider({
+              ...getValuesProvider(),
+              productId: product.id,
+            })
+        }
+      }
+      toast.success('Producto actualizado correctamente')
+    } else {
+      const productCreated = await createProduct(productData)
+      if (!productCreated) return
 
-    const providerData = getValuesProvider()
-    const bound = await boundProductProvider({
-      productId: productCreated.id,
-      ...providerData,
-    })
-    await setDefaultProductProvider(bound.id)
+      const providerData = getValuesProvider()
+      const bound = await boundProductProvider({
+        productId: productCreated.id,
+        ...providerData,
+      })
+      await setDefaultProductProvider(bound.id)
 
-    addProductProvider(bound)
-    onCreate(productCreated)
+      addProductProvider(bound)
+      onCreate(productCreated)
+      toast.success('Producto creado correctamente')
+    }
+
     resetProduct()
     resetProductProvider()
     onClose()
@@ -121,7 +196,7 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
         <form onSubmit={handleSubmitProduct(onSubmit)} className="space-y-4">
           <DialogHeader className="w-full flex justify-center items-center">
             <DialogTitle className="text-2xl font-bold">
-              Crear nuevo producto
+              {product ? 'Editar producto' : 'Crear producto'}
             </DialogTitle>
           </DialogHeader>
 
@@ -153,7 +228,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   {...registerProduct('description')}
                 />
                 {errorsProduct.description && (
-                  <p className="text-red-500">{errorsProduct.description.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.description.message}
+                  </p>
                 )}
               </div>
 
@@ -167,7 +244,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   {...registerProduct('currentStock', { valueAsNumber: true })}
                 />
                 {errorsProduct.currentStock && (
-                  <p className="text-red-500">{errorsProduct.currentStock.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.currentStock.message}
+                  </p>
                 )}
               </div>
 
@@ -181,7 +260,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   {...registerProduct('annualDemand', { valueAsNumber: true })}
                 />
                 {errorsProduct.annualDemand && (
-                  <p className="text-red-500">{errorsProduct.annualDemand.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.annualDemand.message}
+                  </p>
                 )}
               </div>
 
@@ -195,7 +276,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   {...registerProduct('storageCost', { valueAsNumber: true })}
                 />
                 {errorsProduct.storageCost && (
-                  <p className="text-red-500">{errorsProduct.storageCost.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.storageCost.message}
+                  </p>
                 )}
               </div>
 
@@ -219,13 +302,17 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="LOTE_FIJO">Lote Fijo</SelectItem>
-                        <SelectItem value="INTERVALO_FIJO">Intervalo Fijo</SelectItem>
+                        <SelectItem value="INTERVALO_FIJO">
+                          Intervalo Fijo
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
                 {errorsProduct.inventoryPolicy && (
-                  <p className="text-red-500">{errorsProduct.inventoryPolicy.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.inventoryPolicy.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -242,7 +329,9 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                   {...registerProduct('safetyStock', { valueAsNumber: true })}
                 />
                 {errorsProduct.safetyStock && (
-                  <p className="text-red-500">{errorsProduct.safetyStock.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.safetyStock.message}
+                  </p>
                 )}
               </div>
               <div>
@@ -252,11 +341,15 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                 <Input
                   id="reviewIntervalDays"
                   type="number"
-                  {...registerProduct('reviewIntervalDays', { valueAsNumber: true })}
+                  {...registerProduct('reviewIntervalDays', {
+                    valueAsNumber: true,
+                  })}
                   disabled={isLoteFijo}
                 />
                 {errorsProduct.reviewIntervalDays && (
-                  <p className="text-red-500">{errorsProduct.reviewIntervalDays.message}</p>
+                  <p className="text-red-500">
+                    {errorsProduct.reviewIntervalDays.message}
+                  </p>
                 )}
               </div>
 
@@ -305,10 +398,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                     <Input
                       id="unitCost"
                       type="number"
-                      {...registerProductProvider('unitCost', { valueAsNumber: true })}
+                      {...registerProductProvider('unitCost', {
+                        valueAsNumber: true,
+                      })}
                     />
                     {errorsProductProvider.unitCost && (
-                      <p className="text-red-500">{errorsProductProvider.unitCost.message}</p>
+                      <p className="text-red-500">
+                        {errorsProductProvider.unitCost.message}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -318,10 +415,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                     <Input
                       id="leadTime"
                       type="number"
-                      {...registerProductProvider('leadTime', { valueAsNumber: true })}
+                      {...registerProductProvider('leadTime', {
+                        valueAsNumber: true,
+                      })}
                     />
                     {errorsProductProvider.leadTime && (
-                      <p className="text-red-500">{errorsProductProvider.leadTime.message}</p>
+                      <p className="text-red-500">
+                        {errorsProductProvider.leadTime.message}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -331,10 +432,14 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
                     <Input
                       id="shippingCost"
                       type="number"
-                      {...registerProductProvider('shippingCost', { valueAsNumber: true })}
+                      {...registerProductProvider('shippingCost', {
+                        valueAsNumber: true,
+                      })}
                     />
                     {errorsProductProvider.shippingCost && (
-                      <p className="text-red-500">{errorsProductProvider.shippingCost.message}</p>
+                      <p className="text-red-500">
+                        {errorsProductProvider.shippingCost.message}
+                      </p>
                     )}
                   </div>
                 </>
@@ -343,8 +448,18 @@ export default function AddProductModal({ isOpen, onClose, onCreate }: Props) {
           </div>
 
           <div className="flex flex-row justify-center items-center gap-x-4">
-            <Button type="submit" className="text-white px-4 py-2 rounded">
-              Crear Producto
+            <Button
+              type="submit"
+              className="text-white px-4 py-2 rounded"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin h-4 w-4" />
+              ) : product ? (
+                'Actualizar'
+              ) : (
+                'Crear'
+              )}
             </Button>
             <Button className="text-white px-4 py-2 rounded" onClick={onClose}>
               Cancelar

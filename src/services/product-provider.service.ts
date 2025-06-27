@@ -40,3 +40,29 @@ export const setDefaultProductProvider = async (id: number) => {
     return {}
   }
 }
+
+export const updateProviderProduct = async (
+  productId: number,
+  payload: {
+    productId: number
+    providerId: number
+    unitCost: number
+    leadTime: number
+    shippingCost: number
+  }
+) => {
+  try {
+    const res = await fetch(`${BASE_URL}/products-providers/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error(error)
+    return {}
+  }
+}
