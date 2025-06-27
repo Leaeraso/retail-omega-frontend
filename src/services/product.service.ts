@@ -41,6 +41,23 @@ export const getProducts = async () => {
     return []
   }
 }
+export const getProductById = async (productId: number) => {
+  try {
+    const res = await fetch(`${BASE_URL}/products/${productId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+    if (!res.ok) throw new Error(`Error al obtener el producto con ID ${productId}`)
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error("Error en getProductById:", error)
+    return null
+  }
+}
+
 export const getActiveProducts = async () => {
   try {
     const res = await fetch(`${BASE_URL}/products/active`, {
@@ -131,4 +148,6 @@ export const deleteProducts = async (id: number) => {
     console.error(error)
     return { success: false, error: "Error de red" }
   }
+
+
 }

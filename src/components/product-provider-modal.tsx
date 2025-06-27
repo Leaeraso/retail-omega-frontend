@@ -1,3 +1,5 @@
+'use client'
+
 import {
   createProductProviderSchema,
   ProductProviderFormData,
@@ -19,28 +21,32 @@ import { Button } from './ui/button'
 import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { boundProductProvider } from '@/services/product-provider.service'
+import { updateProviderProduct } from '@/services/product-provider.service'
 import toast from 'react-hot-toast'
 import { ProductProvider } from '@/types/product-provider.types'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-  onCreate: (p: ProductProvider) => void
+  onCreate?: (p: ProductProvider) => void
+  onUpdate?: (p: ProductProvider) => void
   productId: number
+  editingProvider?: ProductProvider | null
 }
 
 export function ProductProviderModal({
   isOpen,
   onClose,
   onCreate,
+  onUpdate,
   productId,
+  editingProvider = null,
 }: Props) {
   const {
     register: registerProductProvider,
-    reset: resetProductProvider,
+    reset,
     control: controlProductProvider,
     handleSubmit,
-    reset: resetProvider,
     formState: { errors: errorsProductProvider, isSubmitting },
     watch: watchProvider,
   } = useForm<ProductProviderFormData>({
@@ -52,6 +58,7 @@ export function ProductProviderModal({
       shippingCost: 0,
     },
   })
+
   const { activeProviders, fetchActiveProviders } = useProviders()
 
   const providerId = watchProvider('providerId')
@@ -61,21 +68,69 @@ export function ProductProviderModal({
     if (isOpen && activeProviders.length === 0) fetchActiveProviders()
   }, [isOpen, activeProviders.length, fetchActiveProviders])
 
-  const onSubmit = async (productProviderData: ProductProviderFormData) => {
-    try {
+  useEffect(() => {
+    if (editingProvider) {
+      reset({
+        providerId: editingProvider.providerId,
+        unitCost: editingProvider.unitCost,
+        leadTime: editingProvider.leadTime,
+        shippingCost: editingProvider.shippingCost,
+      })
+    } else {
+      reset({
+        providerId: 0,
+        unitCost: 0,
+        leadTime: 0,
+        shippingCost: 0,
+      })
+    }
+  }, [editingProvider, reset])
+
+  const onSubmit = async (data: ProductProviderFormData) => {
+    if (editingProvider) {
+      const res = await updateProviderProduct(productId, {
+        productId,
+        providerId: data.providerId,
+        unitCost: data.unitCost,
+        leadTime: data.leadTime,
+        shippingCost: data.shippingCost,
+      })
+
+      if (!res.success) {
+        toast.error(res.error || 'Error al actualizar proveedor')
+        return
+      }
+
+      if (onUpdate) {
+        onUpdate(res.data)
+      }
+
+      if (onCreate) {
+        onCreate(res.data)
+      }
+      toast.success('Proveedor actualizado correctamente')
+      onClose()
+    } else {
       const res = await boundProductProvider({
-        ...productProviderData,
+        ...data,
         productId,
       })
-      onCreate(res)
-      toast.success('Proveedor agregado correctamente')
 
-      resetProductProvider()
-      resetProvider()
+      if (!res.success) {
+        toast.error(res.error || 'Error al agregar proveedor')
+        return
+      }
+
+      if (onUpdate) {
+        onUpdate(res.data)
+      }
+
+      if (onCreate) {
+        onCreate(res.data)
+      }
+      
+      toast.success('Proveedor agregado correctamente')
       onClose()
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al agregar proveedor')
     }
   }
 
@@ -85,7 +140,7 @@ export function ProductProviderModal({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DialogHeader className="w-full flex justify-center items-center">
             <DialogTitle className="text-2xl font-bold">
-              Agregar proveedor
+              {editingProvider ? 'Editar proveedor' : 'Agregar proveedor'}
             </DialogTitle>
           </DialogHeader>
 
@@ -100,6 +155,7 @@ export function ProductProviderModal({
                 <Select
                   value={field.value ? field.value.toString() : ''}
                   onValueChange={(value) => field.onChange(Number(value))}
+                  disabled={!!editingProvider}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona un proveedor" />
@@ -111,10 +167,7 @@ export function ProductProviderModal({
                       </SelectItem>
                     ) : (
                       activeProviders.map((provider) => (
-                        <SelectItem
-                          key={provider.id}
-                          value={provider.id.toString()}
-                        >
+                        <SelectItem key={provider.id} value={provider.id.toString()}>
                           {provider.name}
                         </SelectItem>
                       ))
@@ -139,9 +192,7 @@ export function ProductProviderModal({
                   })}
                 />
                 {errorsProductProvider.unitCost && (
-                  <p className="text-red-500">
-                    {errorsProductProvider.unitCost.message}
-                  </p>
+                  <p className="text-red-500">{errorsProductProvider.unitCost.message}</p>
                 )}
               </div>
               <div>
@@ -156,9 +207,7 @@ export function ProductProviderModal({
                   })}
                 />
                 {errorsProductProvider.leadTime && (
-                  <p className="text-red-500">
-                    {errorsProductProvider.leadTime.message}
-                  </p>
+                  <p className="text-red-500">{errorsProductProvider.leadTime.message}</p>
                 )}
               </div>
               <div>
@@ -173,9 +222,7 @@ export function ProductProviderModal({
                   })}
                 />
                 {errorsProductProvider.shippingCost && (
-                  <p className="text-red-500">
-                    {errorsProductProvider.shippingCost.message}
-                  </p>
+                  <p className="text-red-500">{errorsProductProvider.shippingCost.message}</p>
                 )}
               </div>
             </>
@@ -190,7 +237,7 @@ export function ProductProviderModal({
               {isSubmitting ? (
                 <Loader2 className="animate-spin h-4 w-4" />
               ) : (
-                'Crear'
+                editingProvider ? 'Actualizar' : 'Crear'
               )}
             </Button>
             <Button className="text-white px-4 py-2 rounded" onClick={onClose}>

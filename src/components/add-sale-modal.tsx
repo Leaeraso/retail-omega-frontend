@@ -131,12 +131,29 @@ export default function AddSaleModal({ isOpen, onClose, onSave }: Props) {
                 {products.length > 0 && (
                     <div className="mt-4 space-y-1">
                         <h4 className="font-semibold">Productos agregados:</h4>
-                        <ul className="list-disc pl-4">
-                            {products.map((p, i) => (
-                                <li key={i}>
-                                    ID: {p.productId} | Cantidad: {p.quantity} | Precio: ${p.unitPrice}
-                                </li>
-                            ))}
+                        <ul className="space-y-1 max-h-40 overflow-y-auto">
+                        {products.map((p, i) => (
+                            <li
+                            key={i}
+                            className="flex justify-between items-center border p-2 rounded text-sm"
+                            >
+                            <span>
+                                ID: {p.productId} | Cantidad: {p.quantity} | Precio: ${p.unitPrice}
+                            </span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:underline p-0"
+                                onClick={() => {
+                                const updated = products.filter((_, index) => index !== i)
+                                setProducts(updated)
+                                }}
+                            >
+                                X
+                            </Button>
+                            </li>
+                        ))}
                         </ul>
                     </div>
                 )}
