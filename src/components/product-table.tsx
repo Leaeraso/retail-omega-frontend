@@ -66,6 +66,7 @@ export function ProductTable() {
       const res = await deleteProductById(id)
       if (res.success) {
         toast.success('Producto dado de baja correctamente')
+        fetchProducts()
       } else {
         toast.error(res.error || 'No se pudo dar de baja el producto')
       }
@@ -196,7 +197,7 @@ export function ProductTable() {
                     : product.fixedIntervalPolicy?.safetyStock ?? '-'}
                 </TableCell>
                 <TableCell>
-                  {product.providers[0]?.providerName ?? '-'}
+                  {product.providers.find(p => p.isDefault)?.providerName ?? '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 justify-end">
@@ -210,9 +211,10 @@ export function ProductTable() {
                     >
                       <Eye className="h-3 w-3 text-white" />
                     </Button>
+                    {product.productState === 'ALTA' && 
                     <Button onClick={() => handleEdit(product)}>
                       <Pencil className="h-3 w-3 text-white" />
-                    </Button>
+                    </Button>}
                   </div>
                 </TableCell>
               </TableRow>

@@ -54,7 +54,6 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
   const addedProducts = watch('details')
   const selectedProviderId = watch('providerId')
 
-
   useEffect(() => {
     if (isOpen) {
       if (activeProviders.length === 0) fetchActiveProviders()
@@ -62,17 +61,20 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
   }, [isOpen, activeProviders.length, fetchActiveProviders])
 
   useEffect(() => {
-    if (selectedProviderId && selectedProviderId !== 0) {
-      fetchProductsByProvider(selectedProviderId)
-    
-      setSelectedProductId(0)
-      setValue('details', [])
-    } else {
+    if (!selectedProviderId || selectedProviderId === 0) {
       fetchProductsByProvider(0)
       setSelectedProductId(0)
+      if (!order) setValue('details', []) 
+      return
+    }
+
+    fetchProductsByProvider(selectedProviderId)
+    setSelectedProductId(0)
+
+    if (!order || selectedProviderId !== order.providerId) {
       setValue('details', [])
     }
-  }, [selectedProviderId, fetchProductsByProvider, setValue])
+  }, [selectedProviderId, fetchProductsByProvider, setValue, order])
 
   useEffect(() => {
     if (order) {
@@ -87,19 +89,30 @@ export function OrderModal({ isOpen, onClose, order }: Props) {
   }, [order, reset, fetchProductsByProvider])
 
   const addProduct = () => {
-    if (selectedProductId && quantity > 0) {
-      const current = getValues('details') || []
-      if (current.some((p) => p.productId === selectedProductId)) {
-        toast.error('El producto ya fue agregado')
-        return
-      }
-      setValue('details', [...current, { productId: selectedProductId, quantity }])
-      setSelectedProductId(0)
-      setQuantity(1)
-    } else {
-      toast.error('Selecciona un producto y cantidad válida')
+    if (!selectedProductId || quantity <= 0) {
+      toast.error('Selecciona un producto y una cantidad válida')
+      return
     }
+
+    const current = getValues('details') || []
+
+    const existingIndex = current.findIndex(p => p.productId === selectedProductId)
+
+    if (existingIndex !== -1) {
+      const updated = [...current]
+      updated[existingIndex] = { productId: selectedProductId, quantity } // reemplaza
+      setValue('details', updated)
+
+      toast.success('Cantidad actualizada para el producto seleccionado')
+    } else {
+      setValue('details', [...current, { productId: selectedProductId, quantity }])
+      toast.success('Producto agregado correctamente')
+    }
+
+    setSelectedProductId(0)
+    setQuantity(1)
   }
+
 
   const onSubmit = async (orderData: OrderFormData) => {
     try {

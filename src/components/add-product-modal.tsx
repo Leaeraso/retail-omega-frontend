@@ -80,6 +80,7 @@ export default function AddProductModal({
     reset: resetProvider,
     formState: { errors: errorsProductProvider },
     watch: watchProvider,
+    trigger: triggerProviderValidation,
   } = useForm<ProductProviderFormData>({
     resolver: zodResolver(createProductProviderSchema),
     defaultValues: {
@@ -147,22 +148,30 @@ export default function AddProductModal({
   ])
 
   const onSubmit = async (productData: ProductFormData) => {
+    const providerValidation = await triggerProviderValidation()
+
+    if (!providerValidation) {
+      toast.error('Completá los datos del proveedor')
+      return
+    }
+
     if (product) {
       const res = await updateProduct(product.id, productData)
       onUpdate(product.id, res)
-      if (isProviderSelected) {
-        if (res.ok) {
-          const res2 = await updateProviderProduct(product.id, {
+
+      if (isProviderSelected && res.ok) {
+        const res2 = await updateProviderProduct(product.id, {
+          ...getValuesProvider(),
+          productId: product.id,
+        })
+        if (res2.ok) {
+          updateProductProvider({
             ...getValuesProvider(),
             productId: product.id,
           })
-          if (res2.ok)
-            updateProductProvider({
-              ...getValuesProvider(),
-              productId: product.id,
-            })
         }
       }
+
       toast.success('Producto actualizado correctamente')
     } else {
       const productCreated = await createProduct(productData)
@@ -173,9 +182,9 @@ export default function AddProductModal({
         productId: productCreated.id,
         ...providerData,
       })
-      await setDefaultProductProvider(bound.id)
+      await setDefaultProductProvider(bound.data.id)
 
-      addProductProvider(bound)
+      addProductProvider(bound.data)
       onCreate(productCreated)
       toast.success('Producto creado correctamente')
     }
@@ -184,6 +193,7 @@ export default function AddProductModal({
     resetProductProvider()
     onClose()
   }
+
 
   return (
     <Dialog

@@ -8,21 +8,35 @@ export const boundProductProvider = async (payload: {
   shippingCost: number
 }) => {
   try {
-    const res = await fetch(`${BASE_URL}/product-providers`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/product-providers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     })
-    const data = await res.json()
 
-    return data
+    if (res.status === 400) {
+      const error = await res.json()
+      return { success: false, error: error.message || "Error de validación" }
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: `Error ${res.status}: ${await res.text()}`
+      }
+    }
+
+    const data = await res.json()
+    return { success: true, data }
   } catch (error) {
     console.error(error)
-    return {}
+    return { success: false, error: 'Error de red o servidor' }
   }
 }
+
+
 
 export const setDefaultProductProvider = async (id: number) => {
   try {

@@ -27,11 +27,13 @@ export const useProductStore = create<ProductStore>((set) => ({
           ? [...state.activeProducts, product]
           : state.activeProducts,
     })),
-  updateProduct: (id, product) =>
-    set((state) => ({
-      products: state.products.map((p) =>
-        p.id === id ? { ...p, product } : p
-      ),
-      activeProducts: state.activeProducts.filter((p) => p.id !== id),
-    })),
+ updateProduct: (id, updatedFields) =>
+  set((state) => ({
+    products: state.products.map((p) =>
+      p.id === id ? { ...p, ...updatedFields } : p
+    ),
+    activeProducts: state.activeProducts.map((p) =>
+      p.id === id ? { ...p, ...updatedFields } : p
+    ),
+  })),
 }))
